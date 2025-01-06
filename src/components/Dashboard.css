@@ -1,0 +1,299 @@
+.dashboard-container {
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Navbar */
+.professional-navbar {
+  background-color: #1a3b5d;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.brand-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+}
+
+.brand-text {
+  color: #ffffff;
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-left: 1rem;
+}
+
+.nav-item-link {
+  color: rgba(255, 255, 255, 0.9) !important;
+  display: flex !important;
+  align-items: center;
+  padding: 0.7rem 1rem !important;
+  transition: all 0.2s;
+}
+
+.nav-item-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.nav-icon {
+  margin-right: 0.5rem;
+}
+
+.badge-count {
+  background-color: #e63946;
+  color: white;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+}
+
+.badge-count {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background-color: #dc3545;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 12px;
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-item-link {
+  position: relative;
+}
+
+/* Main Content */
+.main-content {
+  padding: 2rem 1rem;
+}
+
+.dashboard-title {
+  color: #1a3b5d;
+  font-size: 2.2rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+/* Exam Cards */
+.exam-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s;
+  height: 100%;
+}
+
+.exam-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.exam-card-header {
+  background-color: #1a3b5d;
+  color: white;
+  padding: 1.25rem;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.exam-card-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.status-badge {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.3rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.exam-card-body {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  color: #495057;
+  gap: 0.8rem;
+}
+
+.info-icon {
+  color: #1a3b5d;
+}
+
+.exam-details {
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 6px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.detail-label {
+  color: #6c757d;
+  font-size: 0.85rem;
+}
+
+.detail-value {
+  color: #212529;
+  font-weight: 600;
+}
+
+.start-exam-btn {
+  background-color: #1a3b5d;
+  color: white;
+  border: none;
+  padding: 0.8rem;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s;
+  margin-top: auto;
+}
+
+.start-exam-btn:hover {
+  background-color: #2d5175;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 3rem;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  padding: 0.8rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.action-btn.primary {
+  background-color: #1a3b5d;
+  color: white;
+  border: none;
+}
+
+.action-btn.secondary {
+  background-color: #2d5175;
+  color: white;
+  border: none;
+}
+
+.action-btn.outline {
+  background-color: transparent;
+  border: 2px solid #1a3b5d;
+  color: #1a3b5d;
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive */
+
+/* Navbar Brand and Toggle */
+.navbar-toggler {
+  margin-left: auto; /* Align the toggle button to the right of the brand name */
+  border: none; /* Remove border for cleaner look */
+}
+
+.navbar-toggler-icon {
+  background-color: #fff; /* White color for better contrast */
+  border-radius: 4px; /* Rounded edges */
+  padding: 4px;
+}
+
+/* Navbar Collapse Style for Smaller Screens */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0 10px; /* Add padding to ensure content stays within the screen */
+    margin: 0; /* Remove any unwanted margin */
+  }
+
+  .navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 5px; /* Space between logo and brand text */
+  }
+
+  .navbar-brand img {
+    height: 30px; /* Logo size */
+    width: 30px;
+  }
+
+  .brand-text {
+    font-size: 16px; /* Adjust font size for better fit */
+    white-space: nowrap; /* Prevent text wrapping */
+  }
+
+  .navbar-toggler {
+    margin-left: auto; /* Push toggler to the far right */
+    padding: 0.25rem 0.5rem; /* Compact size for toggler */
+    position: relative; /* Ensure it doesn't overflow */
+    z-index: 1; /* Make sure it stays above other elements */
+  }
+
+  .navbar-collapse {
+    padding: 0.5rem; /* Compact padding for dropdown */
+    background-color: #1a3b5d;
+    border-radius: 8px;
+    margin-top: 0.5rem;
+  }
+
+  .navbar-nav {
+    gap: 0.5rem; /* Space between menu items */
+  }
+
+  .nav-link {
+    font-size: 14px; /* Font size for links */
+    color: white !important; /* Ensure visibility */
+  }
+
+  .container-fluid {
+    padding: 0; /* Remove default padding */
+    margin: 0; /* Ensure it stays within the screen */
+    max-width: 100%; /* Prevent content overflow */
+  }
+}
+
+
+
+
+
+
+.start-exam-btn.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #ccc;
+}
+
+.start-exam-btn {
+  width: 100%;
+  padding: 10px;
+  margin-top: 15px;
+  border: none;
+  border-radius: 4px;
+  background-color: #1a3b5d;;
+  color: white;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
