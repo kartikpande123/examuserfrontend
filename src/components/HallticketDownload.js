@@ -19,21 +19,6 @@ const RegenerateHallTicket = () => {
     return `${hour12}:${minutes} ${ampm}`;
   };
 
-  // Function to calculate exam end time (2 hours after start time)
-  const calculateEndTime = (startTime) => {
-    if (!startTime) return '';
-    const [hours, minutes] = startTime.split(':');
-    let endHour = parseInt(hours) + 2;
-    const endMinutes = minutes;
-
-    // Handle day rollover
-    if (endHour >= 24) {
-      endHour -= 24;
-    }
-
-    return `${endHour.toString().padStart(2, '0')}:${endMinutes}`;
-  };
-
   const generateHallTicket = async (candidate) => {
     const pdf = new jsPDF({
       orientation: 'portrait',
@@ -72,8 +57,6 @@ const RegenerateHallTicket = () => {
     pdf.setTextColor(0, 0, 0);
     pdf.text(`Registration ID: ${candidate.registrationNumber}`, 25, 51);
 
-    const endTime = calculateEndTime(candidate.examStartTime);
-
     // Main details
     const details = [
       { label: 'Candidate Name', value: candidate.candidateName },
@@ -84,7 +67,7 @@ const RegenerateHallTicket = () => {
       { label: 'Phone Number', value: candidate.phone },
       { label: 'Exam', value: candidate.exam },
       { label: 'Exam Start Time', value: formatTime(candidate.examStartTime) },
-      { label: 'Exam End Time', value: formatTime(endTime) }
+      { label: 'Exam End Time', value: formatTime(candidate.examEndTime) } // Using examEndTime from API
     ];
 
     let yPosition = 65;

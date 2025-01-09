@@ -124,11 +124,8 @@ const AboutUs = () => {
           </div>
         </div>
 
-        <p>This website was designed and developed by <a href="https://kartikpande123.github.io/Myportfolio/">Ak Software Devlopers</a>, providing customized solutions for [Karnataka Ayan Wholesale Supply Enterprises].</p>
-
-
         <footer>
-  <p>&copy; 2025/2026 [Karnataka Ayan Wholesale Supply Enterprises]. All Rights Reserved. Developed by <a href="https://kartikpande123.github.io/Myportfolio/">kartik V Pande</a>.</p>
+  <p style={{marginTop:"15px"}}>&copy; 2025/2026 Karnataka Ayan Wholesale Supply Enterprises All Rights Reserved.</p>
 </footer>
 
       </div>

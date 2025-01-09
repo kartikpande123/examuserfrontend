@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { jsPDF } from 'jspdf';
 import image from "../Images/LOGO.jpg";
-import API_BASE_URL from "./ApiConifg"
+import API_BASE_URL from "./ApiConifg";
 
 const PaymentGateway = () => {
   const location = useLocation();
@@ -15,7 +15,6 @@ const PaymentGateway = () => {
 
   // Ensure formData exists and normalize examDate
   const formData = location.state || {};
-  // Convert exam date to string if it's an array
   formData.examDate = Array.isArray(formData.examDate) ? formData.examDate[0] : formData.examDate;
 
   if (!formData.exam || !formData.examPrice) {
@@ -28,21 +27,57 @@ const PaymentGateway = () => {
     );
   }
 
-  const formatTime = (time24) => {
-    if (!time24) return '';
-    const [hours, minutes] = time24.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${minutes} ${ampm}`;
+  // Improved time formatting function
+  const formatTime = (timeStr) => {
+    if (!timeStr) return '';
+
+    try {
+      // Handle if time is already in correct format
+      if (timeStr.includes(' ')) {
+        const [time, period] = timeStr.split(' ');
+        const [hours, minutes] = time.split(':');
+        const formattedHours = hours.padStart(2, '0');
+        const formattedMinutes = minutes.padStart(2, '0');
+        return `${formattedHours}:${formattedMinutes} ${period}`;
+      }
+
+      // Handle 24-hour format
+      const [hours, minutes] = timeStr.split(':');
+      const hour = parseInt(hours);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const hour12 = hour % 12 || 12;
+      return `${hour12.toString().padStart(2, '0')}:${minutes.padStart(2, '0')} ${ampm}`;
+    } catch (error) {
+      console.error('Time formatting error:', error);
+      return timeStr;
+    }
   };
 
-  const calculateEndTime = (startTime) => {
-    if (!startTime) return '';
-    const [hours, minutes] = startTime.split(':');
-    let endHour = parseInt(hours) + 2;
-    if (endHour >= 24) endHour -= 24;
-    return `${endHour.toString().padStart(2, '0')}:${minutes}`;
+  // Updated registration data preparation
+  const prepareRegistrationData = () => {
+    const formDataToSend = new FormData();
+
+    // Format times properly
+    const examStartTime = formatTime(formData.examStartTime);
+    const examEndTime = formatTime(formData.examEndTime);
+
+    // Append all form data
+    Object.keys(formData).forEach((key) => {
+      if (key === 'photo') {
+        formDataToSend.append('photo', formData[key], formData[key].name);
+      } else if (key === 'examDate') {
+        const examDate = Array.isArray(formData.examDate) ? formData.examDate[0] : formData.examDate;
+        formDataToSend.append('examDate', examDate);
+      } else if (key === 'examStartTime') {
+        formDataToSend.append('examStartTime', examStartTime);
+      } else if (key === 'examEndTime') {
+        formDataToSend.append('examEndTime', examEndTime);
+      } else {
+        formDataToSend.append(key, formData[key]);
+      }
+    });
+
+    return formDataToSend;
   };
 
   const loadRazorpayScript = () => {
@@ -164,32 +199,21 @@ const PaymentGateway = () => {
     setError(null);
 
     try {
-      const formDataToSend = new FormData();
-
-      // Add end time to form data
-      const examEndTime = calculateEndTime(formData.examStartTime);
-
-      // Add all form fields including exam date as a single string
-      Object.keys(formData).forEach((key) => {
-        if (key === 'photo') {
-          formDataToSend.append('photo', formData[key], formData[key].name);
-        } else if (key === 'examDate') {
-          // Ensure examDate is sent as a single string
-          const examDate = Array.isArray(formData.examDate) ? formData.examDate[0] : formData.examDate;
-          formDataToSend.append('examDate', examDate);
-        } else {
-          formDataToSend.append(key, formData[key]);
-        }
-      });
-
-      formDataToSend.append('examEndTime', examEndTime);
+      // Use the prepared registration data
+      const formDataToSend = prepareRegistrationData();
 
       // Register candidate
-      await axios.post(`${API_BASE_URL}/api/register`, formDataToSend, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const registrationResponse = await axios.post(
+        `${API_BASE_URL}/api/register`, 
+        formDataToSend, 
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
 
-      // Fetch the latest candidate details
+      if (!registrationResponse.data.success) {
+        throw new Error('Registration failed');
+      }
+
+      // Fetch latest candidate data
       const response = await axios.get(`${API_BASE_URL}/api/latest-candidate`);
       const candidate = response.data.candidate;
 
@@ -225,17 +249,15 @@ const PaymentGateway = () => {
       pdf.setLineWidth(0.5);
       pdf.line(20, 40, 190, 40);
 
-      // Candidate details section
+      // Registration ID box
       pdf.setFontSize(12);
       pdf.setFont('helvetica', 'bold');
-
-      // Create a styled box for registration ID
       pdf.setFillColor(240, 240, 240);
       pdf.rect(20, 45, 170, 10, 'F');
       pdf.setTextColor(0, 0, 0);
       pdf.text(`Registration ID: ${candidate.registrationNumber}`, 25, 51);
 
-      // Main details with normalized exam date
+      // Main details
       const details = [
         { label: 'Candidate Name', value: candidate.candidateName },
         { label: 'Date of Birth', value: candidate.dob },
@@ -258,7 +280,7 @@ const PaymentGateway = () => {
         yPosition += 10;
       });
 
-      // Add candidate photo if available
+      // Add candidate photo
       if (candidate.photoUrl) {
         pdf.addImage(candidate.photoUrl, 'JPEG', 140, 60, 35, 45);
         pdf.rect(140, 60, 35, 45);
@@ -284,8 +306,8 @@ const PaymentGateway = () => {
         'Save your Registration ID for future reference.',
         'Once the exam starts, entry will not be granted.',
         'The Registration ID is valid only for the selected exams.',
-        'Register at least 15 minutes before the exam starts and wait for the exam to begin. Only attempted answers will be considered after the exam ends.'
-
+        'Register at least 15 minutes before the exam starts and wait for the exam to begin.',
+        "Only attempted answers will be considered after the exam ends."
       ];
 
       instructions.forEach(instruction => {
@@ -297,7 +319,6 @@ const PaymentGateway = () => {
       pdf.setFontSize(8);
       pdf.text('This is a computer-generated document. No signature is required.', 25, 280);
 
-      // Save the PDF
       pdf.save(`${candidate.candidateName}_HallTicket.pdf`);
       alert('Hall ticket has been generated and downloaded successfully!');
 
@@ -330,6 +351,7 @@ const PaymentGateway = () => {
                   <p className="card-text">
                     <strong>Exam:</strong> {formData.exam}<br />
                     <strong>Exam Date:</strong> {formData.examDate}<br />
+                    <strong>Exam Time:</strong> {formatTime(formData.examStartTime)} to {formatTime(formData.examEndTime)}<br />
                     <strong>Candidate Name:</strong> {formData.candidateName}<br />
                     <strong>Amount:</strong> ₹{formData.examPrice}
                   </p>

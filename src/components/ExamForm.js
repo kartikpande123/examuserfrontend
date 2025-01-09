@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import "./Examform.css"
-import API_BASE_URL from "./ApiConifg"
+import "./Examform.css";
+import API_BASE_URL from "./ApiConifg";
 
 const ExamForm = () => {
   const [formData, setFormData] = useState({
@@ -18,10 +17,12 @@ const ExamForm = () => {
     photo: null,
     exam: '',
     examStartTime: '',
+    examEndTime: '',
     examPrice: '',
-    examDate: '' // Added new field for exam date
+    examDate: ''
   });
 
+  const [imageError, setImageError] = useState('');
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -33,7 +34,13 @@ const ExamForm = () => {
     eventSource.onmessage = (event) => {
       const response = JSON.parse(event.data);
       if (response.success) {
-        setExams(response.data);
+        // Parse and format times when receiving exam data
+        const formattedExams = response.data.map(exam => ({
+          ...exam,
+          startTime: formatTimeString(exam.startTime),
+          endTime: formatTimeString(exam.endTime)
+        }));
+        setExams(formattedExams);
         setLoading(false);
       } else {
         setError('Failed to load exams');
@@ -50,23 +57,55 @@ const ExamForm = () => {
     return () => eventSource.close();
   }, []);
 
+  const formatTimeString = (timeStr) => {
+    try {
+      const [time, period] = timeStr.split(' ');
+      const [hours, minutes] = time.split(':');
+      const formattedHours = hours.padStart(2, '0');
+      const formattedMinutes = minutes ? minutes.padStart(2, '0') : '00';
+      return `${formattedHours}:${formattedMinutes} ${period || 'AM'}`;
+    } catch (error) {
+      console.error('Error formatting time:', error);
+      return timeStr;
+    }
+  };
+
+  const validateImageSize = (file) => {
+    const maxSize = 1024 * 1024; // 1 MB in bytes
+    return file.size <= maxSize;
+  };
+
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     
     if (name === 'exam') {
       const selectedExam = exams.find(exam => exam.id === value);
-      setFormData(prev => ({
-        ...prev,
-        exam: value,
-        examStartTime: selectedExam?.startTime || '',
-        examPrice: selectedExam?.price || '',
-        examDate: selectedExam?.date || '' // Add date when exam is selected
-      }));
+      if (selectedExam) {
+        setFormData(prev => ({
+          ...prev,
+          exam: value,
+          examStartTime: selectedExam.startTime,
+          examEndTime: selectedExam.endTime,
+          examPrice: selectedExam.price,
+          examDate: selectedExam.date
+        }));
+      }
     } else if (name === 'photo' && files?.length > 0) {
-      setFormData(prev => ({
-        ...prev,
-        photo: files[0]
-      }));
+      const file = files[0];
+      if (validateImageSize(file)) {
+        setImageError('');
+        setFormData(prev => ({
+          ...prev,
+          photo: file
+        }));
+      } else {
+        setImageError('Image size must be less than 1 MB');
+        e.target.value = '';
+        setFormData(prev => ({
+          ...prev,
+          photo: null
+        }));
+      }
     } else {
       setFormData(prev => ({
         ...prev,
@@ -77,18 +116,25 @@ const ExamForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!formData.photo) {
+      setImageError('Please select a photo under 1 MB');
+      return;
+    }
+
     const formattedData = {
       ...formData,
       dob: new Date(formData.dob).toISOString().split('T')[0],
       createdAt: new Date().toISOString()
     };
+
     navigate('/paymentgateway', { state: formattedData });
   };
 
   return (
     <div className="container my-5">
       <div className="card shadow">
-        <div className="card-header text-white text-center">
+        <div className="card-header bg-primary text-white text-center">
           <h3>Exam Application Form</h3>
         </div>
         <div className="card-body">
@@ -237,7 +283,7 @@ const ExamForm = () => {
             </div>
 
             <div className="mb-3">
-              <label htmlFor="photo" className="form-label">Upload Photo</label>
+              <label htmlFor="photo" className="form-label">Upload Photo (Max size: 1 MB)</label>
               <input
                 type="file"
                 id="photo"
@@ -247,12 +293,18 @@ const ExamForm = () => {
                 onChange={handleChange}
                 required
               />
+              {imageError && (
+                <div className="text-danger mt-2">
+                  {imageError}
+                </div>
+              )}
             </div>
 
-            {formData.examPrice && (
+            {formData.examPrice && formData.examStartTime && formData.examEndTime && (
               <div className="mb-3">
                 <div className="alert alert-info">
-                  Selected Exam Price: ₹{formData.examPrice}
+                  <p className="mb-1">Selected Exam Price: ₹{formData.examPrice}</p>
+                  <p className="mb-0">Exam Time: {formData.examStartTime} to {formData.examEndTime}</p>
                 </div>
               </div>
             )}

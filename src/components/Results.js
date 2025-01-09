@@ -12,7 +12,6 @@ const ExamResults = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredResults, setFilteredResults] = useState([]);
 
-  // Fetch all exam results
   useEffect(() => {
     const fetchAllResults = async () => {
       try {
@@ -33,7 +32,6 @@ const ExamResults = () => {
     fetchAllResults();
   }, []);
 
-  // Fetch specific exam results when selected
   useEffect(() => {
     const fetchExamResults = async () => {
       if (!selectedExam) {
@@ -57,9 +55,7 @@ const ExamResults = () => {
               examDetails: {
                 examName: selectedExamData.examId,
                 date: new Date().toISOString().split('T')[0],
-                totalMarks: selectedExamData.candidates[0]?.totalQuestions || 0,
-                startTime: "9:00 AM",
-                endTime: "12:00 PM"
+                totalMarks: selectedExamData.candidates[0]?.totalQuestions || 0
               },
               results: selectedExamData.candidates.sort((a, b) => b.correctAnswers - a.correctAnswers)
             };
@@ -84,7 +80,6 @@ const ExamResults = () => {
     fetchExamResults();
   }, [selectedExam]);
 
-  // Handle search
   useEffect(() => {
     if (!results) return;
 
@@ -97,7 +92,6 @@ const ExamResults = () => {
 
   return (
     <div className="container-fluid px-3 px-md-5 py-4">
-      {/* Header Section */}
       <div className="row mb-4">
         <div className="col-12">
           <div className="bg-primary rounded-4 p-4 shadow-lg">
@@ -136,7 +130,6 @@ const ExamResults = () => {
         </div>
       </div>
 
-      {/* Search Bar */}
       {results && (
         <div className="row mb-4">
           <div className="col-12">
@@ -167,7 +160,6 @@ const ExamResults = () => {
         </div>
       )}
 
-      {/* Loading State */}
       {loading && (
         <div className="d-flex justify-content-center py-5">
           <div className="spinner-grow text-primary" role="status">
@@ -176,7 +168,6 @@ const ExamResults = () => {
         </div>
       )}
 
-      {/* Error Message */}
       {error && (
         <div className="alert alert-danger rounded-4 shadow-sm" role="alert">
           <div className="d-flex align-items-center">
@@ -186,32 +177,24 @@ const ExamResults = () => {
         </div>
       )}
 
-      {/* Results Section */}
       {results && (
         <div className="card border-0 shadow-lg rounded-4 overflow-hidden">
-          {/* Exam Details */}
           <div className="card-header bg-primary text-white p-4">
             <h2 className="h5 mb-3">{results.examDetails.examName}</h2>
             <div className="row g-3">
-              <div className="col-12 col-sm-6 col-md-3">
+              <div className="col-12 col-sm-6 col-md-4">
                 <div className="p-3 bg-white bg-opacity-10 rounded-3">
                   <div className="text-white-50 small mb-1">Date</div>
                   <div className="fw-bold">{results.examDetails.date}</div>
                 </div>
               </div>
-              <div className="col-12 col-sm-6 col-md-3">
-                <div className="p-3 bg-white bg-opacity-10 rounded-3">
-                  <div className="text-white-50 small mb-1">Time</div>
-                  <div className="fw-bold">{results.examDetails.startTime} - {results.examDetails.endTime}</div>
-                </div>
-              </div>
-              <div className="col-12 col-sm-6 col-md-3">
+              <div className="col-12 col-sm-6 col-md-4">
                 <div className="p-3 bg-white bg-opacity-10 rounded-3">
                   <div className="text-white-50 small mb-1">Total Questions</div>
                   <div className="fw-bold">{results.examDetails.totalMarks}</div>
                 </div>
               </div>
-              <div className="col-12 col-sm-6 col-md-3">
+              <div className="col-12 col-sm-6 col-md-4">
                 <div className="p-3 bg-white bg-opacity-10 rounded-3">
                   <div className="text-white-50 small mb-1">Candidates</div>
                   <div className="fw-bold">{results.results.length}</div>
@@ -220,7 +203,6 @@ const ExamResults = () => {
             </div>
           </div>
 
-          {/* Results Table */}
           <div className="card-body p-0">
             <div className="table-responsive">
               <table className="table table-hover mb-0">
@@ -268,7 +250,6 @@ const ExamResults = () => {
         </div>
       )}
 
-      {/* Empty State */}
       {!selectedExam && !loading && (
         <div className="text-center py-5">
           <div className="mb-3">📊</div>
