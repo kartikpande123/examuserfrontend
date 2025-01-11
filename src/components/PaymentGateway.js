@@ -200,6 +200,7 @@ const PaymentGateway = () => {
 
       // Set registration number and show alert
       setRegistrationNumber(candidate.registrationNumber);
+
       // Create PDF
       const pdf = new jsPDF({
         orientation: 'portrait',
@@ -236,6 +237,13 @@ const PaymentGateway = () => {
       pdf.setTextColor(0, 0, 0);
       pdf.text(`Registration ID: ${candidate.registrationNumber}`, 25, 51);
 
+      // Format the date
+      const examDate = new Date(candidate.examDate).toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+
       // Main details
       const details = [
         { label: 'Candidate Name', value: candidate.candidateName },
@@ -245,9 +253,9 @@ const PaymentGateway = () => {
         { label: 'State', value: candidate.state },
         { label: 'Phone Number', value: candidate.phone },
         { label: 'Exam', value: candidate.exam },
-        { label: 'Exam Date', value: candidate.examDate },
-        { label: 'Exam Start Time', value: candidate.examStartTime },
-        { label: 'Exam End Time', value: candidate.examEndTime }
+        { label: 'Exam Date', value: examDate }, // Using formatted date
+        { label: 'Exam Start Time', value: formatTime(candidate.examStartTime) },
+        { label: 'Exam End Time', value: formatTime(candidate.examEndTime) }
       ];
 
       let yPosition = 65;
