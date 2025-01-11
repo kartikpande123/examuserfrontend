@@ -12,6 +12,8 @@ const PaymentGateway = () => {
   const [error, setError] = useState(null);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
+  const [hallTicketGenerated, setHallTicketGenerated] = useState(false);
+  const [registrationNumber, setRegistrationNumber] = useState(null);
 
   // Ensure formData exists and normalize examDate
   const formData = location.state || {};
@@ -27,51 +29,22 @@ const PaymentGateway = () => {
     );
   }
 
-  // Improved time formatting function
+  // Modified time formatting function to preserve original format
   const formatTime = (timeStr) => {
     if (!timeStr) return '';
-
-    try {
-      // Handle if time is already in correct format
-      if (timeStr.includes(' ')) {
-        const [time, period] = timeStr.split(' ');
-        const [hours, minutes] = time.split(':');
-        const formattedHours = hours.padStart(2, '0');
-        const formattedMinutes = minutes.padStart(2, '0');
-        return `${formattedHours}:${formattedMinutes} ${period}`;
-      }
-
-      // Handle 24-hour format
-      const [hours, minutes] = timeStr.split(':');
-      const hour = parseInt(hours);
-      const ampm = hour >= 12 ? 'PM' : 'AM';
-      const hour12 = hour % 12 || 12;
-      return `${hour12.toString().padStart(2, '0')}:${minutes.padStart(2, '0')} ${ampm}`;
-    } catch (error) {
-      console.error('Time formatting error:', error);
-      return timeStr;
-    }
+    return timeStr;
   };
 
   // Updated registration data preparation
   const prepareRegistrationData = () => {
     const formDataToSend = new FormData();
 
-    // Format times properly
-    const examStartTime = formatTime(formData.examStartTime);
-    const examEndTime = formatTime(formData.examEndTime);
-
-    // Append all form data
     Object.keys(formData).forEach((key) => {
       if (key === 'photo') {
         formDataToSend.append('photo', formData[key], formData[key].name);
       } else if (key === 'examDate') {
         const examDate = Array.isArray(formData.examDate) ? formData.examDate[0] : formData.examDate;
         formDataToSend.append('examDate', examDate);
-      } else if (key === 'examStartTime') {
-        formDataToSend.append('examStartTime', examStartTime);
-      } else if (key === 'examEndTime') {
-        formDataToSend.append('examEndTime', examEndTime);
       } else {
         formDataToSend.append(key, formData[key]);
       }
@@ -195,11 +168,15 @@ const PaymentGateway = () => {
   };
 
   const handleCreateHallticket = async () => {
+    if (hallTicketGenerated) {
+      setError('Hall ticket has already been generated. Please check your downloads.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      // Use the prepared registration data
       const formDataToSend = prepareRegistrationData();
 
       // Register candidate
@@ -210,7 +187,7 @@ const PaymentGateway = () => {
       );
 
       if (!registrationResponse.data.success) {
-        throw new Error('Registration failed');
+        throw new Error(registrationResponse.data.error || 'Registration failed');
       }
 
       // Fetch latest candidate data
@@ -221,6 +198,8 @@ const PaymentGateway = () => {
         throw new Error('Failed to fetch candidate details');
       }
 
+      // Set registration number and show alert
+      setRegistrationNumber(candidate.registrationNumber);
       // Create PDF
       const pdf = new jsPDF({
         orientation: 'portrait',
@@ -228,7 +207,7 @@ const PaymentGateway = () => {
         format: 'a4'
       });
 
-      // Add logo
+      // Add logo with specific dimensions
       pdf.addImage(image, 'JPEG', 20, 10, 30, 30);
 
       // Header styling
@@ -267,8 +246,8 @@ const PaymentGateway = () => {
         { label: 'Phone Number', value: candidate.phone },
         { label: 'Exam', value: candidate.exam },
         { label: 'Exam Date', value: candidate.examDate },
-        { label: 'Exam Start Time', value: formatTime(candidate.examStartTime) },
-        { label: 'Exam End Time', value: formatTime(candidate.examEndTime) }
+        { label: 'Exam Start Time', value: candidate.examStartTime },
+        { label: 'Exam End Time', value: candidate.examEndTime }
       ];
 
       let yPosition = 65;
@@ -280,10 +259,15 @@ const PaymentGateway = () => {
         yPosition += 10;
       });
 
-      // Add candidate photo
+      // Add candidate photo if exists
       if (candidate.photoUrl) {
-        pdf.addImage(candidate.photoUrl, 'JPEG', 140, 60, 35, 45);
-        pdf.rect(140, 60, 35, 45);
+        try {
+          pdf.addImage(candidate.photoUrl, 'JPEG', 140, 60, 35, 45);
+          pdf.rect(140, 60, 35, 45);
+        } catch (error) {
+          console.error('Error adding photo to PDF:', error);
+          // Continue without the photo if there's an error
+        }
       }
 
       // Instructions section
@@ -320,11 +304,16 @@ const PaymentGateway = () => {
       pdf.text('This is a computer-generated document. No signature is required.', 25, 280);
 
       pdf.save(`${candidate.candidateName}_HallTicket.pdf`);
+      setHallTicketGenerated(true);
       alert('Hall ticket has been generated and downloaded successfully!');
 
     } catch (error) {
       console.error('Error generating hall ticket:', error);
-      setError('Failed to create hall ticket. Please try again.');
+      if (error.response?.data?.error === 'Duplicate registration') {
+        setError('You have already registered for this exam.');
+      } else {
+        setError(error.message || 'Failed to create hall ticket. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -351,7 +340,7 @@ const PaymentGateway = () => {
                   <p className="card-text">
                     <strong>Exam:</strong> {formData.exam}<br />
                     <strong>Exam Date:</strong> {formData.examDate}<br />
-                    <strong>Exam Time:</strong> {formatTime(formData.examStartTime)} to {formatTime(formData.examEndTime)}<br />
+                    <strong>Exam Time:</strong> {formData.examStartTime} to {formData.examEndTime}<br />
                     <strong>Candidate Name:</strong> {formData.candidateName}<br />
                     <strong>Amount:</strong> ₹{formData.examPrice}
                   </p>
@@ -359,6 +348,15 @@ const PaymentGateway = () => {
               </div>
             </div>
           </div>
+
+          {registrationNumber && (
+            <div className="alert alert-info mb-4">
+              <h5 className="alert-heading">Important! Save Your Registration Number</h5>
+              <p className="mb-0">Your Registration Number: <strong>{registrationNumber}</strong></p>
+              <hr />
+              <p className="mb-0 text-danger">Please keep this number safe. You will need it to access your exam and for any future communications.</p>
+            </div>
+          )}
 
           <div className="text-center">
             {!paymentCompleted ? (
@@ -384,13 +382,15 @@ const PaymentGateway = () => {
                 <button
                   onClick={handleCreateHallticket}
                   className="btn btn-success btn-lg"
-                  disabled={loading}
+                  disabled={loading || hallTicketGenerated}
                 >
                   {loading ? (
                     <span>
                       <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                       Generating Hall Ticket...
                     </span>
+                  ) : hallTicketGenerated ? (
+                    'Hall Ticket Already Generated'
                   ) : (
                     'Create and Download Hall Ticket'
                   )}
