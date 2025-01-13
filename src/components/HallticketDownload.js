@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { jsPDF } from 'jspdf';
 import image from "../Images/LOGO.jpg";
-import API_BASE_URL from "./ApiConifg"
+import API_BASE_URL from "./ApiConifg";
 
 const RegenerateHallTicket = () => {
   const [regId, setRegId] = useState('');
@@ -66,8 +66,9 @@ const RegenerateHallTicket = () => {
       { label: 'State', value: candidate.state },
       { label: 'Phone Number', value: candidate.phone },
       { label: 'Exam', value: candidate.exam },
+      { label: 'Exam Date', value: candidate.examDate }, // Added exam date
       { label: 'Exam Start Time', value: formatTime(candidate.examStartTime) },
-      { label: 'Exam End Time', value: formatTime(candidate.examEndTime) } // Using examEndTime from API
+      { label: 'Exam End Time', value: formatTime(candidate.examEndTime) }
     ];
 
     let yPosition = 65;
@@ -106,7 +107,7 @@ const RegenerateHallTicket = () => {
       'Once the exam starts, entry will not be granted.',
       'The Registration ID is valid only for the selected exams.',
       'Register at least 15 minutes before the exam starts and wait for the exam to begin.',
-      'Only attempted answers will be considered after the exam ends..'
+      'Only attempted answers will be considered after the exam ends.'
     ];
 
     instructions.forEach(instruction => {

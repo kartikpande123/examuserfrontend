@@ -14,6 +14,8 @@ const PaymentGateway = () => {
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [hallTicketGenerated, setHallTicketGenerated] = useState(false);
   const [registrationNumber, setRegistrationNumber] = useState(null);
+  const [showPolicyModal, setShowPolicyModal] = useState(false);
+  const [policyAccepted, setPolicyAccepted] = useState(false);
 
   // Ensure formData exists and normalize examDate
   const formData = location.state || {};
@@ -29,13 +31,296 @@ const PaymentGateway = () => {
     );
   }
 
-  // Modified time formatting function to preserve original format
+  const cancellationPolicy = `Cancellation Policy for ARN Private Exam Conduct
+
+1. Eligibility for Cancellation
+• Exam registration cancellations are allowed only if requested within a specified timeframe, typically 2 days before the scheduled exam date.
+• Cancellation requests after the specified timeframe will not be entertained, except in extraordinary circumstances at our sole discretion.
+
+2. Process for Cancellation
+• Users must submit a written request for cancellation via email or the designated cancellation form available on our website.
+• Cancellation requests must include the user's name, registration ID, and reason for cancellation.
+
+3. Refund Policy
+• Full refunds: If the cancellation request is made within 2 days after registration or before the cancellation deadline.
+• Partial refunds: If allowed, these will deduct processing fees (e.g., payment gateway charges or administrative costs).
+• No refunds: For cancellation requests made after the specified deadline or for users who fail to appear for the exam.
+
+4. Non-Refundable Fees
+• Certain fees, such as administrative charges or late registration fees, are non-refundable under all circumstances.
+
+5. Exam Rescheduling
+• Instead of cancellation, users may request to reschedule their exam to a later date if the option is available.
+• Rescheduling requests may incur an additional fee.
+
+6. No-Show Policy
+• Users who do not appear for the exam without prior notice or approval will forfeit the entire registration fee.
+
+7. Cancellation Due to Technical Issues
+• If the exam is canceled or postponed by ARN Private Exam Conduct due to technical or operational issues, users will be given the option to:
+  - Reschedule the exam at no extra cost, or
+  - Receive a full refund of the registration fee.
+
+8. Extraordinary Circumstances
+• In cases of emergencies such as natural disasters, severe illness (with medical proof), or other unforeseen events, cancellation or rescheduling may be allowed on a case-by-case basis.
+
+9. Notification of Changes
+• ARN Private Exam Conduct reserves the right to modify this cancellation policy at any time.
+• Changes will be communicated through our website or email.
+
+10. Contact for Cancellation Requests
+• Users can contact us at +91 6360785195 for queries or to initiate a cancellation request.`;
+
+const termsAndConditions = `Terms and Conditions
+
+1. Acceptance of Terms
+• By accessing or using our website, you agree to abide by these Terms and Conditions.
+• If you do not agree to these terms, you may not use the services provided by ARN Private Exam Conduct.
+
+2. Eligibility
+• Users must be at least 18 years old or have parental/guardian consent to register and participate in exams.
+• Accurate and truthful information must be provided during registration.
+
+3. User Account Responsibilities
+• Users are responsible for maintaining the confidentiality of their account credentials.
+• Unauthorized access to or use of your account must be reported to us immediately.
+
+4. Exam Conduct Guidelines
+• Users must adhere to all instructions provided during the exam.
+• Cheating, plagiarism, or any other form of malpractice is strictly prohibited and will result in disqualification.
+
+5. Fees and Payments
+• Exam fees must be paid in full before registration is considered complete.
+• Fees are non-refundable unless stated otherwise.
+
+6. Website Usage Restrictions
+• Users may not use the website for any illegal or unauthorized purpose.
+• Users must not attempt to harm, disrupt, or exploit the website's security or functionality.
+
+7. Intellectual Property
+• All content on the website, including text, images, logos, and software, is the intellectual property of ARN Private Exam Conduct.
+• Unauthorized reproduction or distribution of any content is prohibited.
+
+8. Limitation of Liability
+• ARN Private Exam Conduct is not liable for any technical issues, loss of data, or other interruptions during the exam.
+
+9. Termination of Services
+• We reserve the right to suspend or terminate user accounts for violations of these terms.
+
+10. Amendments
+• We may update these terms periodically. Users will be notified of significant changes, and continued use of the website signifies acceptance of the updated terms.
+
+Privacy Policy
+
+1. Information We Collect
+• Personal Information: Name, email address, phone number, payment details, etc.
+• Exam Data: Performance, answers, and scores.
+• Technical Information: IP address, browser type, and cookies for website functionality.
+
+2. How We Use Your Information
+• To register and authenticate users.
+• To conduct and manage online exams.
+• To communicate updates, results, and notifications.
+
+3. Data Sharing
+• We do not share your personal information with third parties, except as required by law or with your consent.
+
+4. Data Security
+• We employ industry-standard security measures to protect your data.
+• While we strive to safeguard your information, no system is completely secure.
+
+5. User Rights
+• Access: Users can request access to their personal data.
+• Rectification: Users can update or correct their data.
+• Deletion: Users may request the deletion of their data, subject to legal and operational requirements.
+
+6. Third-Party Services
+• We may use third-party payment gateways or analytics tools. These services have their own privacy policies.
+
+7. Retention of Data
+• User data is retained as long as necessary for operational, legal, or regulatory purposes.
+
+8. Changes to the Privacy Policy
+• We may update this policy periodically. Users will be notified of significant changes.`;
+
+  const downloadCancellationPolicy = () => {
+    const pdf = new jsPDF();
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(16);
+    pdf.text("Cancellation Policy - ARN Private Exam Conduct", 20, 20);
+    
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(12);
+    const splitText = pdf.splitTextToSize(cancellationPolicy, 170);
+    pdf.text(splitText, 20, 40);
+    
+    pdf.save("cancellation_policy.pdf");
+  };
+
+  const downloadTermsAndConditions = () => {
+    const pdf = new jsPDF();
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(16);
+    pdf.text("Terms and Conditions & Privacy Policy", 20, 20);
+    
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(12);
+    const splitText = pdf.splitTextToSize(termsAndConditions, 170);
+    pdf.text(splitText, 20, 40);
+    
+    pdf.save("terms_and_conditions.pdf");
+  };
+
+  const PolicyModal = () => {
+    const modalContentRef = React.useRef(null);
+  
+    // Function to handle checkbox change without scrolling
+    const handleCheckboxChange = (e) => {
+      e.preventDefault(); // Prevent default behavior that might cause scrolling
+      setPolicyAccepted(e.target.checked);
+    };
+  
+    return (
+      <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
+        <div 
+          className="modal-dialog modal-lg modal-dialog-scrollable" 
+          style={{ maxWidth: '800px' }}
+        >
+          <div className="modal-content border-0 shadow-lg">
+            <div className="modal-header bg-primary text-white border-0">
+              <h5 className="modal-title">Policies and Terms</h5>
+              <button 
+                type="button" 
+                className="btn-close btn-close-white" 
+                onClick={() => setShowPolicyModal(false)}
+                aria-label="Close"
+              ></button>
+            </div>
+            <div 
+              className="modal-body" 
+              ref={modalContentRef}
+              style={{ 
+                maxHeight: '70vh',
+                overflowY: 'auto',
+                scrollbarWidth: 'thin',
+                scrollbarColor: '#6c757d transparent'
+              }}
+            >
+              {/* Cancellation Policy Section */}
+              <div className="mb-4 p-3 bg-light rounded">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <h6 className="fw-bold mb-0 text-primary">Cancellation Policy</h6>
+                  <button 
+                    className="btn btn-sm btn-outline-primary"
+                    onClick={downloadCancellationPolicy}
+                  >
+                    <i className="bi bi-download me-1"></i>
+                    Download PDF
+                  </button>
+                </div>
+                <div className="policy-content" style={{ 
+                  maxHeight: '200px', 
+                  overflowY: 'auto', 
+                  padding: '15px',
+                  backgroundColor: 'white',
+                  borderRadius: '8px',
+                  border: '1px solid #dee2e6'
+                }}>
+                  <pre style={{ 
+                    whiteSpace: 'pre-wrap', 
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                    fontSize: '0.9rem',
+                    lineHeight: '1.5'
+                  }}>
+                    {cancellationPolicy}
+                  </pre>
+                </div>
+              </div>
+  
+              {/* Terms and Conditions Section */}
+              <div className="p-3 bg-light rounded">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <h6 className="fw-bold mb-0 text-primary">Terms and Conditions & Privacy Policy</h6>
+                  <button 
+                    className="btn btn-sm btn-outline-primary"
+                    onClick={downloadTermsAndConditions}
+                  >
+                    <i className="bi bi-download me-1"></i>
+                    Download PDF
+                  </button>
+                </div>
+                <div className="policy-content" style={{ 
+                  maxHeight: '200px', 
+                  overflowY: 'auto',
+                  padding: '15px',
+                  backgroundColor: 'white',
+                  borderRadius: '8px',
+                  border: '1px solid #dee2e6'
+                }}>
+                  <pre style={{ 
+                    whiteSpace: 'pre-wrap', 
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                    fontSize: '0.9rem',
+                    lineHeight: '1.5'
+                  }}>
+                    {termsAndConditions}
+                  </pre>
+                </div>
+              </div>
+            </div>
+  
+            {/* Fixed Footer */}
+            <div className="modal-footer border-top bg-light" style={{ position: 'sticky', bottom: 0 }}>
+              <div className="container-fluid">
+                <div className="row align-items-center">
+                  <div className="col-12 col-md-7 mb-2 mb-md-0">
+                    <div className="form-check">
+                      <input
+                        type="checkbox"
+                        className="form-check-input"
+                        id="acceptPolicy"
+                        checked={policyAccepted}
+                        onChange={handleCheckboxChange}
+                      />
+                      <label className="form-check-label" htmlFor="acceptPolicy">
+                        I have read and agree to all policies and terms
+                      </label>
+                    </div>
+                  </div>
+                  <div className="col-12 col-md-5 text-md-end">
+                    <button 
+                      type="button" 
+                      className="btn btn-secondary me-2" 
+                      onClick={() => setShowPolicyModal(false)}
+                    >
+                      Close
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      disabled={!policyAccepted}
+                      onClick={() => {
+                        setShowPolicyModal(false);
+                        handlePayment();
+                      }}
+                    >
+                      Proceed to Payment
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const formatTime = (timeStr) => {
     if (!timeStr) return '';
     return timeStr;
   };
 
-  // Updated registration data preparation
   const prepareRegistrationData = () => {
     const formDataToSend = new FormData();
 
@@ -167,6 +452,10 @@ const PaymentGateway = () => {
     }
   };
 
+  const initiatePaymentProcess = () => {
+    setShowPolicyModal(true);
+  };
+
   const handleCreateHallticket = async () => {
     if (hallTicketGenerated) {
       setError('Hall ticket has already been generated. Please check your downloads.');
@@ -253,7 +542,7 @@ const PaymentGateway = () => {
         { label: 'State', value: candidate.state },
         { label: 'Phone Number', value: candidate.phone },
         { label: 'Exam', value: candidate.exam },
-        { label: 'Exam Date', value: examDate }, // Using formatted date
+        { label: 'Exam Date', value: examDate },
         { label: 'Exam Start Time', value: formatTime(candidate.examStartTime) },
         { label: 'Exam End Time', value: formatTime(candidate.examEndTime) }
       ];
@@ -263,8 +552,7 @@ const PaymentGateway = () => {
         pdf.setFont('helvetica', 'bold');
         pdf.text(`${label}:`, 25, yPosition);
         pdf.setFont('helvetica', 'normal');
-        pdf.text(value || '', 80, yPosition);
-        yPosition += 10;
+        pdf.text(value || '', 80, yPosition);yPosition += 10;
       });
 
       // Add candidate photo if exists
@@ -369,7 +657,7 @@ const PaymentGateway = () => {
           <div className="text-center">
             {!paymentCompleted ? (
               <button
-                onClick={handlePayment}
+                onClick={initiatePaymentProcess}
                 className="btn btn-primary btn-lg mb-3"
                 disabled={paymentProcessing || loading}
               >
@@ -408,6 +696,8 @@ const PaymentGateway = () => {
           </div>
         </div>
       </div>
+
+      {showPolicyModal && <PolicyModal />}
     </div>
   );
 };
