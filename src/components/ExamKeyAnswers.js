@@ -24,7 +24,7 @@ const ExamKeyAnswer = () => {
       );
       setQaData(qaArray);
     } catch (err) {
-      setError("Failed to load Q&A data. Please try again later.");
+      setError("No key answers available");
       console.error("Error:", err);
     } finally {
       setLoading(false);

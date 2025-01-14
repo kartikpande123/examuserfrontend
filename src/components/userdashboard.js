@@ -23,20 +23,17 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if the popup should be displayed
     const hasVisited = localStorage.getItem("hasVisited");
     if (!hasVisited) {
       setShowPopup(true);
       localStorage.setItem("hasVisited", "true");
     }
 
-    // Clear the flag when the website is closed
     const clearLocalStorageOnClose = () => {
       localStorage.removeItem("hasVisited");
     };
     window.addEventListener("beforeunload", clearLocalStorageOnClose);
 
-    // Cleanup event listener on component unmount
     return () => {
       window.removeEventListener("beforeunload", clearLocalStorageOnClose);
     };
@@ -217,6 +214,28 @@ const Dashboard = () => {
           <ActionButton color="primary" text="Exam Form" onClick={goToExamForm} />
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="footer mt-5 bg-light py-3">
+        <div className="container text-center">
+          <p className="mb-2">
+            &copy; 2025/2026 Karnataka Ayan Wholesale Supply Enterprises. All Rights Reserved.
+          </p>
+          <ul className="list-inline mb-0">
+            <li className="list-inline-item">
+              <Link to="/termscondition" className="footer-link">Terms and Conditions</Link>
+            </li>
+            <li className="list-inline-item">|</li>
+            <li className="list-inline-item">
+              <Link to="/privacypolicy" className="footer-link">Privacy Policy</Link>
+            </li>
+            <li className="list-inline-item">|</li>
+            <li className="list-inline-item">
+              <Link to="/cancellationplicy" className="footer-link">Cancellation Policy</Link>
+            </li>
+          </ul>
+        </div>
+      </footer>
     </div>
   );
 };

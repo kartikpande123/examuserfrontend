@@ -15,6 +15,9 @@ import QAList from './components/ExamKeyAnswers';
 import ExamKeyAnswer from './components/ExamKeyAnswers';
 import ExamResults from './components/Results';
 import WelcomePopup from './components/WelcomePopup';
+import TermsAndConditions from './components/TermsAndCondition';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import CancellationPolicy from './components/CancelationPloicy';
 
 function App() {
   return (
@@ -33,6 +36,9 @@ function App() {
           <Route path="aboutus" element={<AboutUs />} />
           <Route path="examqa" element={<ExamKeyAnswer />} />
           <Route path="examresults" element={<ExamResults />} />
+          <Route path="termscondition" element={<TermsAndConditions />} />
+          <Route path="privacypolicy" element={<PrivacyPolicy />} />
+          <Route path="cancellationplicy" element={<CancellationPolicy />} />
           <Route path="wcp" element={<WelcomePopup />} />
           <Route path="downloadhallticket" element={<RegenerateHallTicket />} />
         </Routes>

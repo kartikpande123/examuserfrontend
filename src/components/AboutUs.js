@@ -1,5 +1,6 @@
 import React from 'react';
 import { MapPin, Phone, Mail, Target, Eye, Award, Users, Clock } from 'lucide-react';
+import {Link} from "react-router-dom"
 
 const AboutUs = () => {
   return (
@@ -20,9 +21,9 @@ const AboutUs = () => {
           <div className="card-body">
             <h2 className="card-title text-primary h3 mb-4">About Our Company</h2>
             <p className="card-text">
-              Founded in 2024, ARN Private Exam Conduct is a specialized educational service provider 
-              focused on preparing students for competitive examinations. We conduct comprehensive 
-              model exams that simulate real competitive examination environments, helping students 
+              Founded in 2024, ARN Private Exam Conduct is a specialized educational service provider
+              focused on preparing students for competitive examinations. We conduct comprehensive
+              model exams that simulate real competitive examination environments, helping students
               gain valuable experience across all types of competitive tests.
             </p>
           </div>
@@ -36,8 +37,8 @@ const AboutUs = () => {
                 <Target className="text-primary mb-3" size={32} />
                 <h3 className="card-title h4">Our Mission</h3>
                 <p className="card-text">
-                  To provide students with authentic examination experiences through high-quality 
-                  model tests, enabling them to build confidence and excel in their competitive 
+                  To provide students with authentic examination experiences through high-quality
+                  model tests, enabling them to build confidence and excel in their competitive
                   exam journey.
                 </p>
               </div>
@@ -49,7 +50,7 @@ const AboutUs = () => {
                 <Eye className="text-primary mb-3" size={32} />
                 <h3 className="card-title h4">Our Vision</h3>
                 <p className="card-text">
-                  To become the leading competitive exam preparation platform in Karnataka, 
+                  To become the leading competitive exam preparation platform in Karnataka,
                   recognized for our innovative approach and commitment to student success.
                 </p>
               </div>
@@ -92,9 +93,9 @@ const AboutUs = () => {
           <div className="card-body">
             <h2 className="card-title text-primary h3 mb-4">Our Team</h2>
             <p>
-              Our dedicated team consists of experienced educators and examination experts who are 
-              committed to providing the best preparation experience for competitive exams. With 
-              their extensive knowledge and expertise, they ensure that students receive quality 
+              Our dedicated team consists of experienced educators and examination experts who are
+              committed to providing the best preparation experience for competitive exams. With
+              their extensive knowledge and expertise, they ensure that students receive quality
               guidance and support throughout their preparation journey.
             </p>
           </div>
@@ -124,9 +125,26 @@ const AboutUs = () => {
           </div>
         </div>
 
-        <footer>
-  <p style={{marginTop:"15px"}}>&copy; 2025/2026 Karnataka Ayan Wholesale Supply Enterprises All Rights Reserved.</p>
-</footer>
+        <footer className="footer mt-5 bg-light py-3">
+                <div className="container text-center">
+                  <p className="mb-2">
+                    &copy; 2025/2026 Karnataka Ayan Wholesale Supply Enterprises. All Rights Reserved.
+                  </p>
+                  <ul className="list-inline mb-0">
+                    <li className="list-inline-item">
+                      <Link to="/termscondition" className="footer-link">Terms and Conditions</Link>
+                    </li>
+                    <li className="list-inline-item">|</li>
+                    <li className="list-inline-item">
+                      <Link to="/privacypolicy" className="footer-link">Privacy Policy</Link>
+                    </li>
+                    <li className="list-inline-item">|</li>
+                    <li className="list-inline-item">
+                      <Link to="/cancellationplicy" className="footer-link">Cancellation Policy</Link>
+                    </li>
+                  </ul>
+                </div>
+              </footer>
 
       </div>
     </div>

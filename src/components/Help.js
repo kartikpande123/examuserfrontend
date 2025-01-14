@@ -3,6 +3,7 @@ import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './Help.css';
 import API_BASE_URL from "./ApiConifg"
+import {Link} from "react-router-dom"
 
 const Help = () => {
   const [concern, setConcern] = useState('');
@@ -43,7 +44,7 @@ const Help = () => {
   };
 
   return (
-    <div className="help-container d-flex justify-content-center align-items-center">
+    <div className="help-container d-flex flex-column justify-content-center align-items-center">
       <div className="card help-card">
         <div className="card-header">
           <h3 className="help-heading">Help</h3>
@@ -80,6 +81,26 @@ const Help = () => {
           )}
         </div>
       </div>
+      <footer className="footer mt-5 bg-light py-3">
+        <div className="container text-center">
+          <p className="mb-2">
+            &copy; 2025/2026 Karnataka Ayan Wholesale Supply Enterprises. All Rights Reserved.
+          </p>
+          <ul className="list-inline mb-0">
+            <li className="list-inline-item">
+              <Link to="/termscondition" className="footer-link">Terms and Conditions</Link>
+            </li>
+            <li className="list-inline-item">|</li>
+            <li className="list-inline-item">
+              <Link to="/privacypolicy" className="footer-link">Privacy Policy</Link>
+            </li>
+            <li className="list-inline-item">|</li>
+            <li className="list-inline-item">
+              <Link to="/cancellationplicy" className="footer-link">Cancellation Policy</Link>
+            </li>
+          </ul>
+        </div>
+      </footer>
     </div>
   );
 };

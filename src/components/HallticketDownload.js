@@ -67,8 +67,9 @@ const RegenerateHallTicket = () => {
       { label: 'Phone Number', value: candidate.phone },
       { label: 'Exam', value: candidate.exam },
       { label: 'Exam Date', value: candidate.examDate }, // Added exam date
-      { label: 'Exam Start Time', value: formatTime(candidate.examStartTime) },
-      { label: 'Exam End Time', value: formatTime(candidate.examEndTime) }
+      { label: 'Exam Start Time', value: candidate.examStartTime },
+      { label: 'Exam End Time', value: candidate.examEndTime }
+
     ];
 
     let yPosition = 65;
