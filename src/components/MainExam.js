@@ -298,19 +298,57 @@ const MainExam = () => {
     }
   };
 
-  const handleExamCompletion = () => {
-    setShowCompletionModal(true);
-    setTimeout(() => {
-      navigate('/', { 
-        state: { 
+  const handleExamCompletion = async () => {
+    try {
+      // First, submit all answers
+      const answersToSubmit = Object.entries(selectedAnswers).map(([questionId, answer], index) => ({
+        registrationNumber: candidateId,
+        questionId: questionId.startsWith('Q') ? questionId : `Q${questionId}`,
+        answer,
+        examName,
+        order: index + 1,
+        skipped: skippedQuestions.includes(questionId)
+      }));
+
+      // Submit answers and update user's submission status
+      const response = await fetch(`${API_BASE_URL}/api/complete-exam`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           candidateId,
           examName,
-          answeredQuestions: Object.keys(selectedAnswers).length,
-          skippedQuestions: skippedQuestions.length,
-          totalQuestions: questions.length
-        }
+          answers: answersToSubmit,
+          submitted: true
+        })
       });
-    }, 3000);
+
+      if (!response.ok) {
+        throw new Error('Failed to submit exam');
+      }
+
+      // Clear local storage
+      localStorage.removeItem(`exam_${examName}_${candidateId}`);
+      localStorage.removeItem(`skipped_${examName}_${candidateId}`);
+
+      // Show completion modal
+      setShowCompletionModal(true);
+
+      // Navigate back after delay
+      setTimeout(() => {
+        navigate('/', { 
+          state: { 
+            candidateId,
+            examName,
+            answeredQuestions: Object.keys(selectedAnswers).length,
+            skippedQuestions: skippedQuestions.length,
+            totalQuestions: questions.length
+          }
+        });
+      }, 3000);
+    } catch (error) {
+      console.error('Error completing exam:', error);
+      alert('Error submitting exam. Please try again or contact support.');
+    }
   };
   if (loading) {
     return (

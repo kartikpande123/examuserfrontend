@@ -145,7 +145,6 @@ const AboutUs = () => {
                   </ul>
                 </div>
               </footer>
-
       </div>
     </div>
   );

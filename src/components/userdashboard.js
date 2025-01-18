@@ -87,6 +87,7 @@ const Dashboard = () => {
   const goToSyllabus = () => navigate("/syllabus");
   const goToHallTicket = () => navigate("/downloadhallticket");
   const goToExamForm = () => navigate("/examform");
+  const goToExamCheckAnswers = () => navigate("/checkanswers");
 
   const unreadCount = notifications.filter((n) => !n.read).length;
   const displayCount = unreadCount > 3 ? "3+" : unreadCount;
@@ -212,6 +213,7 @@ const Dashboard = () => {
             onClick={goToHallTicket}
           />
           <ActionButton color="primary" text="Exam Form" onClick={goToExamForm} />
+          <ActionButton color="primary" text="Check Answers" onClick={goToExamCheckAnswers} />
         </div>
       </div>
 

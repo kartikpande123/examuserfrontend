@@ -57,7 +57,17 @@ const ExamResults = () => {
                 date: new Date().toISOString().split('T')[0],
                 totalMarks: selectedExamData.candidates[0]?.totalQuestions || 0
               },
-              results: selectedExamData.candidates.sort((a, b) => b.correctAnswers - a.correctAnswers)
+              results: selectedExamData.candidates.map(candidate => ({
+                ...candidate,
+                candidateName: candidate.candidateName,
+                registrationNumber: candidate.registrationNumber,
+                correctAnswers: candidate.correctAnswers,
+                wrongAnswers: candidate.wrongAnswers,
+                skippedQuestions: candidate.skippedQuestions,
+                totalQuestions: candidate.totalQuestions,
+                submitted: candidate.submitted,
+                used: candidate.used
+              })).sort((a, b) => b.correctAnswers - a.correctAnswers)
             };
             
             setResults(formattedResults);
@@ -89,6 +99,17 @@ const ExamResults = () => {
     );
     setFilteredResults(filtered);
   }, [searchTerm, results]);
+
+  const getStatusBadge = (submitted, used) => {
+    if (submitted) {
+      return <span className="badge bg-success">Submitted</span>;
+    } else if (!submitted && !used) {
+      return <span className="badge bg-warning">Not Attended</span>;
+    } else if (used && !submitted) {
+      return <span className="badge bg-danger">Network Error</span>;
+    }
+    return null;
+  };
 
   return (
     <div className="container-fluid px-3 px-md-5 py-4">
@@ -211,6 +232,7 @@ const ExamResults = () => {
                     <th className="border-0 text-uppercase small fw-bold" style={{ padding: '1rem' }}>Rank</th>
                     <th className="border-0 text-uppercase small fw-bold">Candidate</th>
                     <th className="border-0 text-uppercase small fw-bold">Reg. Number</th>
+                    <th className="border-0 text-uppercase small fw-bold">Status</th>
                     <th className="border-0 text-uppercase small fw-bold text-center">Correct</th>
                     <th className="border-0 text-uppercase small fw-bold text-center">Wrong</th>
                     <th className="border-0 text-uppercase small fw-bold text-center">Skipped</th>
@@ -225,6 +247,7 @@ const ExamResults = () => {
                         <div className="fw-bold">{result.candidateName}</div>
                       </td>
                       <td className="text-muted">{result.registrationNumber}</td>
+                      <td>{getStatusBadge(result.submitted, result.used)}</td>
                       <td className="text-center">
                         <span className="badge bg-success-subtle text-success px-3 py-2">
                           {result.correctAnswers}
