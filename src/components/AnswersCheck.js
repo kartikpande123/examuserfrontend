@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, AlertCircle, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Search, AlertCircle, CheckCircle, XCircle, Loader2, Clock } from 'lucide-react';
 import API_BASE_URL from "./ApiConifg";
 
 const CandidateAnswerViewer = () => {
@@ -9,48 +9,76 @@ const CandidateAnswerViewer = () => {
   const [candidateData, setCandidateData] = useState(null);
   const [examData, setExamData] = useState(null);
 
+  const isExamCompleted = (examDateTime) => {
+    if (!examDateTime) return false;
+
+    const currentDate = new Date();
+    const examDate = new Date(examDateTime.date);
+    
+    // Parse exam end time
+    const [endTimeStr, period] = examDateTime.endTime.split(' ');
+    let [hours, minutes] = endTimeStr.split(':');
+    hours = parseInt(hours);
+    
+    // Convert to 24-hour format
+    if (period === 'PM' && hours !== 12) {
+      hours += 12;
+    } else if (period === 'AM' && hours === 12) {
+      hours = 0;
+    }
+
+    // Set the exam end time
+    examDate.setHours(hours, parseInt(minutes), 0);
+    
+    return currentDate > examDate;
+  };
+
   const fetchCandidateAnswers = async () => {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch(`${API_BASE_URL}/api/candidate-answers/${registrationId}`);
-      const data = await response.json();
+      // First fetch exam details to check if exam is completed
+      const examResponse = await fetch(`${API_BASE_URL}/api/exams/qa`);
+      const examData = await examResponse.json();
       
-      if (!data.success) {
-        setError(data.message || 'Failed to fetch candidate answers');
-        setCandidateData(null);
-        return;
-      }
-      
-      setCandidateData(data.data);
-      await fetchExamDetails(data.data.candidateDetails.exam);
-    } catch (err) {
-      setError('Error fetching candidate answers');
-      setCandidateData(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchExamDetails = async (examId) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/exams/qa`);
-      const data = await response.json();
-      
-      if (!data.success) {
+      if (!examData.success) {
         setError('Failed to fetch exam details');
         return;
       }
+
+      // Find the relevant exam
+      const candidateResponse = await fetch(`${API_BASE_URL}/api/candidate-answers/${registrationId}`);
+      const candidateData = await candidateResponse.json();
       
-      const matchedExam = data.data.find(exam => exam.id === examId);
+      if (!candidateData.success) {
+        setError(candidateData.message || 'Failed to fetch candidate answers');
+        setCandidateData(null);
+        return;
+      }
+
+      const matchedExam = examData.data.find(exam => exam.id === candidateData.data.candidateDetails.exam);
+      
       if (!matchedExam) {
         setError('Exam details not found');
         return;
       }
-      
+
+      // Check if exam is completed
+      if (!isExamCompleted(matchedExam.dateTime)) {
+        setError('Your exam is not completed yet. Answers will be available after the exam end time.');
+        setCandidateData(null);
+        setExamData(null);
+        return;
+      }
+
+      setCandidateData(candidateData.data);
       setExamData(matchedExam);
+      
     } catch (err) {
-      setError('Error fetching exam details');
+      setError('Error fetching data');
+      setCandidateData(null);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -152,23 +180,31 @@ const CandidateAnswerViewer = () => {
           <div className="card-body p-4">
             <h5 className="text-primary mb-4">Candidate Details</h5>
             <div className="row g-3">
-              <div className="col-12 col-md-6 col-lg-4">
+              <div className="col-12 col-md-6 col-lg-3">
                 <div className="info-item">
                   <label className="text-muted mb-1">Name</label>
                   <p className="fs-5 mb-0">{candidateData.candidateDetails.name}</p>
                 </div>
               </div>
-              <div className="col-12 col-md-6 col-lg-4">
+              <div className="col-12 col-md-6 col-lg-3">
                 <div className="info-item">
                   <label className="text-muted mb-1">Exam ID</label>
                   <p className="fs-5 mb-0">{candidateData.candidateDetails.exam}</p>
                 </div>
               </div>
-              <div className="col-12 col-md-6 col-lg-4">
+              <div className="col-12 col-md-6 col-lg-3">
                 <div className="info-item">
                   <label className="text-muted mb-1">Date</label>
                   <p className="fs-5 mb-0">
                     {new Date(candidateData.candidateDetails.examDate).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+              <div className="col-12 col-md-6 col-lg-3">
+                <div className="info-item">
+                  <label className="text-muted mb-1">Exam Time</label>
+                  <p className="fs-5 mb-0">
+                    {examData.dateTime.startTime} - {examData.dateTime.endTime}
                   </p>
                 </div>
               </div>

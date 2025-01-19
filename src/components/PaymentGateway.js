@@ -577,27 +577,29 @@ Privacy Policy
       pdf.setFont('helvetica', 'normal');
 
       const instructions = [
-        'Login at least 15 minutes before the examination time.',
-        'Registration ID and Hall Ticket are mandatory for the exam.',
-        'Ensure stable internet connection throughout the exam.',
-        'No electronic devices are allowed during the examination.',
-        'Maintain proper webcam positioning throughout the exam.',
-        'Any form of malpractice will lead to immediate disqualification.',
-        'Save your Registration ID for future reference.',
-        'Once the exam starts, entry will not be granted.',
-        'The Registration ID is valid only for the selected exams.',
-        'Register at least 15 minutes before the exam starts and wait for the exam to begin.',
-        "Only attempted answers will be considered after the exam ends."
+        "1. Registration must be completed at least 15 minutes prior to the exam, and participants are required to remain logged in and wait until the exam begins without navigating away from the platform.",
+        "2. Registration ID and Hall Ticket are mandatory for the exam.",
+        "3. Ensure a stable internet connection throughout the exam, with at least 300 MB of data available.",
+        "5. Any form of malpractice will lead to immediate disqualification.",
+        "6. Once the exam starts, entry will not be granted.",
+        "7. The Registration ID is valid only for the selected exams.",
+        "8. Only attempted answers will be considered after the exam ends.",
+        "9. Result Status Rules:",
+        "   - Attempted: Displayed if the user completes and submits all questions in the exam.",
+        "   - Network Error: Displayed if any of the following occurs:",
+        "      * Interruption from a mobile call.",
+        "      * Exiting and reentering the exam tab.",
+        "      * Insufficient or exhausted mobile data.",
+        "      * Searching for questions on external platforms (e.g., Google).",
+        "      * Turning off the web camera during the session.",
+        "   - Not Attended: Displayed if the user does not attempt the exam at all."
       ];
+      
 
       instructions.forEach(instruction => {
         pdf.text('• ' + instruction, 25, yPosition);
         yPosition += 7;
       });
-
-      // Footer
-      pdf.setFontSize(8);
-      pdf.text('This is a computer-generated document. No signature is required.', 25, 280);
 
       pdf.save(`${candidate.candidateName}_HallTicket.pdf`);
       setHallTicketGenerated(true);

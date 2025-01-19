@@ -213,7 +213,7 @@ const Dashboard = () => {
             onClick={goToHallTicket}
           />
           <ActionButton color="primary" text="Exam Form" onClick={goToExamForm} />
-          <ActionButton color="primary" text="Check Answers" onClick={goToExamCheckAnswers} />
+          <ActionButton color="primary" text="Exam Key Answers" onClick={goToExamCheckAnswers} />
         </div>
       </div>
 
