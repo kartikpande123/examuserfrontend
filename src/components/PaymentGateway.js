@@ -577,14 +577,14 @@ Privacy Policy
       pdf.setFont('helvetica', 'normal');
 
       const instructions = [
-        "1. Registration must be completed at least 15 minutes prior to the exam, and participants are required to remain logged in and wait until the exam begins without navigating away from the platform.",
-        "2. Registration ID and Hall Ticket are mandatory for the exam.",
-        "3. Ensure a stable internet connection throughout the exam, with at least 300 MB of data available.",
-        "5. Any form of malpractice will lead to immediate disqualification.",
-        "6. Once the exam starts, entry will not be granted.",
-        "7. The Registration ID is valid only for the selected exams.",
-        "8. Only attempted answers will be considered after the exam ends.",
-        "9. Result Status Rules:",
+        "1. Registration must be completed at least 15 minutes prior to the exam.",
+        "2. Participants must stay logged in and avoid leaving the platform until the exam begins.",
+        "3. Registration ID and Hall Ticket are mandatory for the exam.",
+        "4. Ensure a stable internet connection throughout the exam, with at least 300 MB of data available.",
+        "5. Once the exam starts, entry will not be granted.",
+        "6. The Registration ID is valid only for the selected exams.",
+        "7. Only attempted answers will be considered after the exam ends.",
+        "8. Result Status Rules:",
         "   - Attempted: Displayed if the user completes and submits all questions in the exam.",
         "   - Network Error: Displayed if any of the following occurs:",
         "      * Interruption from a mobile call.",
@@ -594,6 +594,7 @@ Privacy Policy
         "      * Turning off the web camera during the session.",
         "   - Not Attended: Displayed if the user does not attempt the exam at all."
       ];
+      
       
 
       instructions.forEach(instruction => {
