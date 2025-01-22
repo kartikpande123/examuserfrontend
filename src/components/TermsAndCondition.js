@@ -60,7 +60,7 @@ const TermsAndConditions = () => {
           <li>
             <strong style={{ color: '#2c3e50', fontSize: '1.5rem' }}>Website Usage Restrictions</strong>
             <p style={{ fontSize: '1.1rem' }}>
-              Users may not use the website for any illegal or unauthorized purpose. Users must not attempt to harm, disrupt, or exploit the website’s security or functionality.
+              Users may not use the website for any illegal or unauthorized purpose. Users must not attempt to harm, disrupt, or exploit the website's security or functionality.
             </p>
           </li>
           <li>
@@ -88,6 +88,74 @@ const TermsAndConditions = () => {
             </p>
           </li>
         </ol>
+
+        <h2
+          className="mt-5 mb-4"
+          style={{
+            color: '#4CAF50',
+            fontWeight: 'bold',
+            borderBottom: '2px solid #4CAF50',
+            display: 'inline-block',
+            paddingBottom: '8px',
+          }}
+        >
+          Delivery Terms and Conditions
+        </h2>
+        <ol style={{ lineHeight: '2', paddingLeft: '20px' }}>
+          <li>
+            <strong style={{ color: '#2c3e50', fontSize: '1.5rem' }}>Delivery Timelines</strong>
+            <p style={{ fontSize: '1.1rem' }}>
+              Standard delivery time is 5 to 7 business days after your order is confirmed. Delivery timelines may vary during holidays, peak seasons, or due to unforeseen circumstances.
+            </p>
+          </li>
+          <li>
+            <strong style={{ color: '#2c3e50', fontSize: '1.5rem' }}>Shipping Charges</strong>
+            <p style={{ fontSize: '1.1rem' }}>
+              Delivery charges, if any, will be calculated and displayed at checkout. Free shipping is applicable for orders above 500rs unless otherwise specified.
+            </p>
+          </li>
+          <li>
+            <strong style={{ color: '#2c3e50', fontSize: '1.5rem' }}>Order Tracking</strong>
+            <p style={{ fontSize: '1.1rem' }}>
+              You will receive a tracking number via email/SMS once your order has been shipped. Use the tracking number on our help or through the courier service's platform to track your delivery.
+            </p>
+          </li>
+          <li>
+            <strong style={{ color: '#2c3e50', fontSize: '1.5rem' }}>Failed Delivery</strong>
+            <p style={{ fontSize: '1.1rem' }}>
+              If the delivery attempt fails due to incorrect address, unavailability of the recipient, or refusal to accept the order, re-delivery charges may apply. Orders unclaimed for 10 days will be canceled, and refunds (if any) will be subject to our refund policy.
+            </p>
+          </li>
+          <li>
+            <strong style={{ color: '#2c3e50', fontSize: '1.5rem' }}>Delivery Acceptance</strong>
+            <p style={{ fontSize: '1.1rem' }}>
+              Please inspect the package upon delivery and notify us of any issues, such as damaged or missing items, within 24 hours of receipt.
+            </p>
+          </li>
+          <li>
+            <strong style={{ color: '#2c3e50', fontSize: '1.5rem' }}>Delays and Force Majeure</strong>
+            <p style={{ fontSize: '1.1rem' }}>
+              We are not responsible for delivery delays caused by circumstances beyond our control, such as natural disasters, strikes, or transportation disruptions.
+            </p>
+          </li>
+          <li>
+            <strong style={{ color: '#2c3e50', fontSize: '1.5rem' }}>Returns and Exchanges</strong>
+            <p style={{ fontSize: '1.1rem' }}>
+              For returns or exchanges, contact us on your Help Page with your Registration ID. Products must be returned in their original condition and packaging to qualify for a return or exchange.
+            </p>
+          </li>
+          <li>
+            <strong style={{ color: '#2c3e50', fontSize: '1.5rem' }}>Contact Us</strong>
+            <p style={{ fontSize: '1.1rem' }}>
+              For questions or concerns regarding your delivery, please contact our customer support team:<br />
+              Email: arnprivateexamconduct@gmail.com<br />
+              Phone: 6360785195
+            </p>
+          </li>
+        </ol>
+        <p className="mt-4" style={{ fontSize: '1.1rem', fontStyle: 'italic' }}>
+          These terms are subject to change without prior notice. Please check this page periodically for updates.
+        </p>
       </div>
     </div>
   );

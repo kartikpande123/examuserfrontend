@@ -19,6 +19,7 @@ import TermsAndConditions from './components/TermsAndCondition';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import CancellationPolicy from './components/CancelationPloicy';
 import CandidateAnswerViewer from './components/AnswersCheck';
+import FindWinner from './components/FindWinner';
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
           <Route path="wcp" element={<WelcomePopup />} />
           <Route path="downloadhallticket" element={<RegenerateHallTicket />} />
           <Route path="checkanswers" element={<CandidateAnswerViewer />} />
+          <Route path="findwinner" element={<FindWinner />} />
         </Routes>
       </div>
     </Router>

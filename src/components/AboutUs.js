@@ -119,7 +119,7 @@ const AboutUs = () => {
               </div>
               <div className="d-flex align-items-center gap-3">
                 <Mail className="text-primary" size={24} />
-                <p className="mb-0">contact@arnprivateexamconduct.com</p>
+                <p className="mb-0">arnprivateexamconduct@gmail.com</p>
               </div>
             </div>
           </div>

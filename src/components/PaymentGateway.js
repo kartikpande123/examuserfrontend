@@ -407,7 +407,7 @@ Privacy Policy
       const order = await createOrder();
 
       const options = {
-        key: "rzp_test_VdsKKjJWXYkYWD",
+        key: "rzp_live_bvTvgAdltDUW4O",
         amount: parseInt(formData.examPrice) * 100,
         currency: "INR",
         name: "Ayan Study Academy",
