@@ -26,6 +26,7 @@ const ExamForm = () => {
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isValidImage, setIsValidImage] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -34,7 +35,6 @@ const ExamForm = () => {
     eventSource.onmessage = (event) => {
       const response = JSON.parse(event.data);
       if (response.success) {
-        // Parse and format times when receiving exam data
         const formattedExams = response.data.map(exam => ({
           ...exam,
           startTime: formatTimeString(exam.startTime),
@@ -71,7 +71,7 @@ const ExamForm = () => {
   };
 
   const validateImageSize = (file) => {
-    const maxSize = 1024 * 1024; // 1 MB in bytes
+    const maxSize = 2 * 1024 * 1024; // 2 MB in bytes
     return file.size <= maxSize;
   };
 
@@ -94,12 +94,14 @@ const ExamForm = () => {
       const file = files[0];
       if (validateImageSize(file)) {
         setImageError('');
+        setIsValidImage(true);
         setFormData(prev => ({
           ...prev,
           photo: file
         }));
       } else {
-        setImageError('Image size must be less than 1 MB');
+        setImageError('Image size must be less than 2 MB');
+        setIsValidImage(false);
         e.target.value = '';
         setFormData(prev => ({
           ...prev,
@@ -114,11 +116,23 @@ const ExamForm = () => {
     }
   };
 
+  const isFormValid = () => {
+    return formData.candidateName && 
+           formData.gender && 
+           formData.dob && 
+           formData.district && 
+           formData.pincode && 
+           formData.state && 
+           formData.phone && 
+           formData.exam && 
+           isValidImage;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!formData.photo) {
-      setImageError('Please select a photo under 1 MB');
+      setImageError('Please select a photo under 2 MB');
       return;
     }
 
@@ -283,7 +297,7 @@ const ExamForm = () => {
             </div>
 
             <div className="mb-3">
-              <label htmlFor="photo" className="form-label">Upload Photo (Max size: 1 MB)</label>
+              <label htmlFor="photo" className="form-label">Upload Photo (Max size: 2 MB)</label>
               <input
                 type="file"
                 id="photo"
@@ -310,7 +324,11 @@ const ExamForm = () => {
             )}
 
             <div className="text-center">
-              <button type="submit" className="btn btn-primary px-5">
+              <button 
+                type="submit" 
+                className="btn btn-primary px-5"
+                disabled={!isFormValid()}
+              >
                 Submit
               </button>
             </div>

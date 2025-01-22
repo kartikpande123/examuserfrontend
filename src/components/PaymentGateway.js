@@ -71,7 +71,7 @@ const PaymentGateway = () => {
 10. Contact for Cancellation Requests
 • Users can contact us at +91 6360785195 for queries or to initiate a cancellation request.`;
 
-const termsAndConditions = `Terms and Conditions
+  const termsAndConditions = `Terms and Conditions
 
 1. Acceptance of Terms
 • By accessing or using our website, you agree to abide by these Terms and Conditions.
@@ -148,12 +148,12 @@ Privacy Policy
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(16);
     pdf.text("Cancellation Policy - ARN Private Exam Conduct", 20, 20);
-    
+
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(12);
     const splitText = pdf.splitTextToSize(cancellationPolicy, 170);
     pdf.text(splitText, 20, 40);
-    
+
     pdf.save("cancellation_policy.pdf");
   };
 
@@ -162,44 +162,44 @@ Privacy Policy
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(16);
     pdf.text("Terms and Conditions & Privacy Policy", 20, 20);
-    
+
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(12);
     const splitText = pdf.splitTextToSize(termsAndConditions, 170);
     pdf.text(splitText, 20, 40);
-    
+
     pdf.save("terms_and_conditions.pdf");
   };
 
   const PolicyModal = () => {
     const modalContentRef = React.useRef(null);
-  
+
     // Function to handle checkbox change without scrolling
     const handleCheckboxChange = (e) => {
       e.preventDefault(); // Prevent default behavior that might cause scrolling
       setPolicyAccepted(e.target.checked);
     };
-  
+
     return (
       <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
-        <div 
-          className="modal-dialog modal-lg modal-dialog-scrollable" 
+        <div
+          className="modal-dialog modal-lg modal-dialog-scrollable"
           style={{ maxWidth: '800px' }}
         >
           <div className="modal-content border-0 shadow-lg">
             <div className="modal-header bg-primary text-white border-0">
               <h5 className="modal-title">Policies and Terms</h5>
-              <button 
-                type="button" 
-                className="btn-close btn-close-white" 
+              <button
+                type="button"
+                className="btn-close btn-close-white"
                 onClick={() => setShowPolicyModal(false)}
                 aria-label="Close"
               ></button>
             </div>
-            <div 
-              className="modal-body" 
+            <div
+              className="modal-body"
               ref={modalContentRef}
-              style={{ 
+              style={{
                 maxHeight: '70vh',
                 overflowY: 'auto',
                 scrollbarWidth: 'thin',
@@ -210,7 +210,7 @@ Privacy Policy
               <div className="mb-4 p-3 bg-light rounded">
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <h6 className="fw-bold mb-0 text-primary">Cancellation Policy</h6>
-                  <button 
+                  <button
                     className="btn btn-sm btn-outline-primary"
                     onClick={downloadCancellationPolicy}
                   >
@@ -218,16 +218,16 @@ Privacy Policy
                     Download PDF
                   </button>
                 </div>
-                <div className="policy-content" style={{ 
-                  maxHeight: '200px', 
-                  overflowY: 'auto', 
+                <div className="policy-content" style={{
+                  maxHeight: '200px',
+                  overflowY: 'auto',
                   padding: '15px',
                   backgroundColor: 'white',
                   borderRadius: '8px',
                   border: '1px solid #dee2e6'
                 }}>
-                  <pre style={{ 
-                    whiteSpace: 'pre-wrap', 
+                  <pre style={{
+                    whiteSpace: 'pre-wrap',
                     fontFamily: 'system-ui, -apple-system, sans-serif',
                     fontSize: '0.9rem',
                     lineHeight: '1.5'
@@ -236,12 +236,12 @@ Privacy Policy
                   </pre>
                 </div>
               </div>
-  
+
               {/* Terms and Conditions Section */}
               <div className="p-3 bg-light rounded">
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <h6 className="fw-bold mb-0 text-primary">Terms and Conditions & Privacy Policy</h6>
-                  <button 
+                  <button
                     className="btn btn-sm btn-outline-primary"
                     onClick={downloadTermsAndConditions}
                   >
@@ -249,16 +249,16 @@ Privacy Policy
                     Download PDF
                   </button>
                 </div>
-                <div className="policy-content" style={{ 
-                  maxHeight: '200px', 
+                <div className="policy-content" style={{
+                  maxHeight: '200px',
                   overflowY: 'auto',
                   padding: '15px',
                   backgroundColor: 'white',
                   borderRadius: '8px',
                   border: '1px solid #dee2e6'
                 }}>
-                  <pre style={{ 
-                    whiteSpace: 'pre-wrap', 
+                  <pre style={{
+                    whiteSpace: 'pre-wrap',
                     fontFamily: 'system-ui, -apple-system, sans-serif',
                     fontSize: '0.9rem',
                     lineHeight: '1.5'
@@ -268,7 +268,7 @@ Privacy Policy
                 </div>
               </div>
             </div>
-  
+
             {/* Fixed Footer */}
             <div className="modal-footer border-top bg-light" style={{ position: 'sticky', bottom: 0 }}>
               <div className="container-fluid">
@@ -288,9 +288,9 @@ Privacy Policy
                     </div>
                   </div>
                   <div className="col-12 col-md-5 text-md-end">
-                    <button 
-                      type="button" 
-                      className="btn btn-secondary me-2" 
+                    <button
+                      type="button"
+                      className="btn btn-secondary me-2"
                       onClick={() => setShowPolicyModal(false)}
                     >
                       Close
@@ -423,6 +423,7 @@ Privacy Policy
         },
         handler: async function (response) {
           try {
+            setError(null);
             await verifyPayment(response);
             setPaymentCompleted(true);
           } catch (error) {
@@ -470,8 +471,8 @@ Privacy Policy
 
       // Register candidate
       const registrationResponse = await axios.post(
-        `${API_BASE_URL}/api/register`, 
-        formDataToSend, 
+        `${API_BASE_URL}/api/register`,
+        formDataToSend,
         { headers: { 'Content-Type': 'multipart/form-data' } }
       );
 
@@ -552,7 +553,7 @@ Privacy Policy
         pdf.setFont('helvetica', 'bold');
         pdf.text(`${label}:`, 25, yPosition);
         pdf.setFont('helvetica', 'normal');
-        pdf.text(value || '', 80, yPosition);yPosition += 10;
+        pdf.text(value || '', 80, yPosition); yPosition += 10;
       });
 
       // Add candidate photo if exists
@@ -594,8 +595,8 @@ Privacy Policy
         "      * Turning off the web camera during the session.",
         "   - Not Attended: Displayed if the user does not attempt the exam at all."
       ];
-      
-      
+
+
 
       instructions.forEach(instruction => {
         pdf.text('• ' + instruction, 25, yPosition);
@@ -630,6 +631,17 @@ Privacy Policy
               {error}
             </div>
           )}
+
+          <div className="alert alert-warning">
+            <h5 className="alert-heading">Having trouble downloading your hall ticket?</h5>
+            <p className="mb-0">
+              <ul className="mb-0">
+                <li>Contact us at +91 6361785195</li>
+                <li>Keep your payment screenshot ready when seeking help</li>
+                <li>Visit our help section for additional support</li>
+              </ul>
+            </p>
+          </div>
 
           <div className="row mb-4">
             <div className="col-md-6 offset-md-3">
