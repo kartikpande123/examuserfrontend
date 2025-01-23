@@ -100,7 +100,7 @@ const ExamForm = () => {
           photo: file
         }));
       } else {
-        setImageError('Image size must be less than 1 MB');
+        setImageError('Image size must be less than 1 MB. Use https://imagecompressor.11zon.com/en/resize-image/resize-image-to-1mb to compress your image.');
         setIsValidImage(false);
         e.target.value = '';
         setFormData(prev => ({
@@ -312,6 +312,9 @@ const ExamForm = () => {
                   {imageError}
                 </div>
               )}
+              <small className="form-text text-muted">
+                If your image is larger than 1 MB, use <a href="https://imagecompressor.11zon.com/en/resize-image/resize-image-to-1mb" target="_blank" rel="noopener noreferrer">this image compression tool</a> to resize it.
+              </small>
             </div>
 
             {formData.examPrice && formData.examStartTime && formData.examEndTime && (
