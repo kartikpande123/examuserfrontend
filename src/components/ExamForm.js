@@ -71,7 +71,7 @@ const ExamForm = () => {
   };
 
   const validateImageSize = (file) => {
-    const maxSize = 2 * 1024 * 1024; // 2 MB in bytes
+    const maxSize = 1 * 1024 * 1024; // 1 MB in bytes
     return file.size <= maxSize;
   };
 
@@ -100,7 +100,7 @@ const ExamForm = () => {
           photo: file
         }));
       } else {
-        setImageError('Image size must be less than 2 MB');
+        setImageError('Image size must be less than 1 MB');
         setIsValidImage(false);
         e.target.value = '';
         setFormData(prev => ({
@@ -132,7 +132,7 @@ const ExamForm = () => {
     e.preventDefault();
     
     if (!formData.photo) {
-      setImageError('Please select a photo under 2 MB');
+      setImageError('Please select a photo under 1 MB');
       return;
     }
 
@@ -297,7 +297,7 @@ const ExamForm = () => {
             </div>
 
             <div className="mb-3">
-              <label htmlFor="photo" className="form-label">Upload Photo (Max size: 2 MB)</label>
+              <label htmlFor="photo" className="form-label">Upload Photo (Max size: 1 MB)</label>
               <input
                 type="file"
                 id="photo"
