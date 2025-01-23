@@ -462,63 +462,65 @@ Privacy Policy
       setError('Hall ticket has already been generated. Please check your downloads.');
       return;
     }
-
+  
     setLoading(true);
     setError(null);
-
+  
     try {
+      // Prepare form data with photo file
       const formDataToSend = prepareRegistrationData();
-
-      // Register candidate
+  
+      // Register candidate with photo compression on server-side
       const registrationResponse = await axios.post(
         `${API_BASE_URL}/api/register`,
         formDataToSend,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
+        { 
+          headers: { 'Content-Type': 'multipart/form-data' },
+          timeout: 30000 
+        }
       );
-
+  
       if (!registrationResponse.data.success) {
         throw new Error(registrationResponse.data.error || 'Registration failed');
       }
-
+  
       // Fetch latest candidate data
       const response = await axios.get(`${API_BASE_URL}/api/latest-candidate`);
       const candidate = response.data.candidate;
-
+  
       if (!candidate) {
         throw new Error('Failed to fetch candidate details');
       }
-
-      // Set registration number and show alert
+  
+      // Set registration number
       setRegistrationNumber(candidate.registrationNumber);
-
+  
       // Create PDF
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4'
       });
-
-      // Add logo with specific dimensions
+  
+      // Add logo
       pdf.addImage(image, 'JPEG', 20, 10, 30, 30);
-
+  
       // Header styling
       pdf.setFillColor(0, 123, 255);
       pdf.rect(0, 0, 210, 8, 'F');
-
+  
       // Title
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(24);
       pdf.setTextColor(0, 0, 0);
       pdf.text('AYAN STUDY ACADEMY', 60, 25);
-
-      // Subtitle
       pdf.setFontSize(16);
       pdf.text('HALL TICKET', 85, 35);
-
-      // Add decorative line
+  
+      // Decorative line
       pdf.setLineWidth(0.5);
       pdf.line(20, 40, 190, 40);
-
+  
       // Registration ID box
       pdf.setFontSize(12);
       pdf.setFont('helvetica', 'bold');
@@ -526,15 +528,15 @@ Privacy Policy
       pdf.rect(20, 45, 170, 10, 'F');
       pdf.setTextColor(0, 0, 0);
       pdf.text(`Registration ID: ${candidate.registrationNumber}`, 25, 51);
-
-      // Format the date
+  
+      // Format exam date
       const examDate = new Date(candidate.examDate).toLocaleDateString('en-IN', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric'
       });
-
-      // Main details
+  
+      // Candidate details
       const details = [
         { label: 'Candidate Name', value: candidate.candidateName },
         { label: 'Date of Birth', value: candidate.dob },
@@ -547,36 +549,36 @@ Privacy Policy
         { label: 'Exam Start Time', value: formatTime(candidate.examStartTime) },
         { label: 'Exam End Time', value: formatTime(candidate.examEndTime) }
       ];
-
+  
       let yPosition = 65;
       details.forEach(({ label, value }) => {
         pdf.setFont('helvetica', 'bold');
         pdf.text(`${label}:`, 25, yPosition);
         pdf.setFont('helvetica', 'normal');
-        pdf.text(value || '', 80, yPosition); yPosition += 10;
+        pdf.text(value || '', 80, yPosition); 
+        yPosition += 10;
       });
-
-      // Add candidate photo if exists
+  
+      // Add candidate photo
       if (candidate.photoUrl) {
         try {
           pdf.addImage(candidate.photoUrl, 'JPEG', 140, 60, 35, 45);
           pdf.rect(140, 60, 35, 45);
         } catch (error) {
           console.error('Error adding photo to PDF:', error);
-          // Continue without the photo if there's an error
         }
       }
-
+  
       // Instructions section
       yPosition += 10;
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(14);
       pdf.text('IMPORTANT INSTRUCTIONS', 25, yPosition);
-
+  
       yPosition += 10;
       pdf.setFontSize(10);
       pdf.setFont('helvetica', 'normal');
-
+  
       const instructions = [
         "1. Registration must be completed at least 15 minutes prior to the exam.",
         "2. Participants must stay logged in and avoid leaving the platform until the exam begins.",
@@ -595,24 +597,40 @@ Privacy Policy
         "      * Turning off the web camera during the session.",
         "   - Not Attended: Displayed if the user does not attempt the exam at all."
       ];
-
-
-
+  
       instructions.forEach(instruction => {
         pdf.text('• ' + instruction, 25, yPosition);
         yPosition += 7;
       });
-
+  
+      // Save PDF
       pdf.save(`${candidate.candidateName}_HallTicket.pdf`);
+      
       setHallTicketGenerated(true);
       alert('Hall ticket has been generated and downloaded successfully!');
-
+  
     } catch (error) {
       console.error('Error generating hall ticket:', error);
-      if (error.response?.data?.error === 'Duplicate registration') {
-        setError('You have already registered for this exam.');
+      
+      // Detailed error handling
+      if (error.response) {
+        switch (error.response.status) {
+          case 400:
+            setError(error.response.data.error || 'Invalid registration data');
+            break;
+          case 409:
+            setError('You have already registered for this exam.');
+            break;
+          case 500:
+            setError('Server error. Please try again later.');
+            break;
+          default:
+            setError(error.message || 'Failed to create hall ticket');
+        }
+      } else if (error.code === 'ECONNABORTED') {
+        setError('Request timed out. Check your internet connection.');
       } else {
-        setError(error.message || 'Failed to create hall ticket. Please try again.');
+        setError(error.message || 'An unexpected error occurred');
       }
     } finally {
       setLoading(false);
