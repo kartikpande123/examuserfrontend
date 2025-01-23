@@ -636,7 +636,7 @@ Privacy Policy
             <h5 className="alert-heading">Having trouble downloading your hall ticket?</h5>
             <p className="mb-0">
               <ul className="mb-0">
-                <li>Contact us at +91 6361785195</li>
+                <li>Contact us at +91 6360785195, +91 9482759409</li>
                 <li>Keep your payment screenshot ready when seeking help</li>
                 <li>Visit our help section for additional support</li>
               </ul>
