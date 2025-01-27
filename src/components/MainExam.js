@@ -194,14 +194,19 @@ const MainExam = () => {
 
   const handleExamTimeout = async () => {
     try {
-      const answersToSubmit = Object.entries(selectedAnswers).map(([questionId, answer], index) => ({
-        registrationNumber: candidateId,
-        questionId: questionId.startsWith('Q') ? questionId : `Q${questionId}`,
-        answer,
-        examName,
-        order: index + 1,
-        skipped: skippedQuestions.includes(questionId)
-      }));
+      const answersToSubmit = questions.map(question => {
+        const isSkipped = skippedQuestions.includes(question.id);
+        const selectedAnswer = selectedAnswers[question.id];
+        
+        return {
+          registrationNumber: candidateId,
+          questionId: question.id.startsWith('Q') ? question.id : `Q${question.id}`,
+          answer: selectedAnswer !== undefined ? selectedAnswer : null,
+          examName,
+          order: questions.findIndex(q => q.id === question.id) + 1,
+          skipped: isSkipped
+        };
+      });
 
       const response = await fetch(`${API_BASE_URL}/api/timeout-save-answers`, {
         method: 'POST',
@@ -209,16 +214,13 @@ const MainExam = () => {
         body: JSON.stringify({ answers: answersToSubmit })
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to save answers');
+        throw new Error('Failed to save answers');
       }
 
       localStorage.removeItem(`exam_${examName}_${candidateId}`);
       localStorage.removeItem(`skipped_${examName}_${candidateId}`);
-
-      // alert(`Exam time is over! You attempted questions will stored....`);
+      
       setShowCompletionModal(true);
       
       setTimeout(() => {
@@ -235,45 +237,91 @@ const MainExam = () => {
       }, 3000);
     } catch (error) {
       console.error('Error saving timeout answers:', error);
-      // alert(`Error saving answers: ${error.message}. Please contact support.`);
     }
   };
 
+
   const handleAnswerSelection = async (questionId, answer) => {
     try {
+      // Update local state
       const newAnswers = {
         ...selectedAnswers,
         [questionId]: answer
       };
       setSelectedAnswers(newAnswers);
-      setSkippedQuestions(prev => prev.filter(id => id !== questionId));
+      
+      // Remove from skipped questions if it was previously skipped
+      if (skippedQuestions.includes(questionId)) {
+        setSkippedQuestions(prev => prev.filter(id => id !== questionId));
+      }
+
+      // Prepare the answer object with correct format
+      const formattedQuestionId = questionId.startsWith('Q') ? questionId : `Q${questionId}`;
+      
+      const answerPayload = {
+        registrationNumber: candidateId,
+        questionId: formattedQuestionId,
+        answer: answer, // Keep as string to match the selected option
+        examName,
+        order: currentQuestionIndex + 1,
+        skipped: false
+      };
 
       const response = await fetch(`${API_BASE_URL}/api/save-answer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          registrationNumber: candidateId,
-          questionId: questionId.startsWith('Q') ? questionId : `Q${questionId}`,
-          answer,
-          examName,
-          order: currentQuestionIndex + 1,
-          skipped: false
-        })
+        body: JSON.stringify(answerPayload)
       });
 
       if (!response.ok) {
-        console.error('Failed to save answer to backend');
+        throw new Error('Failed to save answer to backend');
       }
     } catch (error) {
       console.error('Error saving answer:', error);
     }
   };
 
-  const handleSkipQuestion = () => {
+  const handleSkipQuestion = async () => {
     const currentQuestion = questions[currentQuestionIndex];
-    setSkippedQuestions(prev => [...prev, currentQuestion.id]);
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
+    const questionId = currentQuestion.id;
+
+    try {
+      // Update local state
+      setSkippedQuestions(prev => [...prev, questionId]);
+      
+      // Remove any previously selected answer
+      const newAnswers = { ...selectedAnswers };
+      delete newAnswers[questionId];
+      setSelectedAnswers(newAnswers);
+
+      // Save skipped status to backend
+      const formattedQuestionId = questionId.startsWith('Q') ? questionId : `Q${questionId}`;
+      
+      const skipPayload = {
+        registrationNumber: candidateId,
+        questionId: formattedQuestionId,
+        answer: null,
+        examName,
+        order: currentQuestionIndex + 1,
+        skipped: true
+      };
+
+      const response = await fetch(`${API_BASE_URL}/api/save-answer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(skipPayload)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save skipped status');
+      }
+
+      // Move to next question if available
+      if (currentQuestionIndex < questions.length - 1) {
+        setCurrentQuestionIndex(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error('Error marking question as skipped:', error);
     }
   };
 
@@ -300,17 +348,20 @@ const MainExam = () => {
 
   const handleExamCompletion = async () => {
     try {
-      // First, submit all answers
-      const answersToSubmit = Object.entries(selectedAnswers).map(([questionId, answer], index) => ({
-        registrationNumber: candidateId,
-        questionId: questionId.startsWith('Q') ? questionId : `Q${questionId}`,
-        answer,
-        examName,
-        order: index + 1,
-        skipped: skippedQuestions.includes(questionId)
-      }));
+      const answersToSubmit = questions.map(question => {
+        const isSkipped = skippedQuestions.includes(question.id);
+        const selectedAnswer = selectedAnswers[question.id];
+        
+        return {
+          registrationNumber: candidateId,
+          questionId: question.id.startsWith('Q') ? question.id : `Q${question.id}`,
+          answer: selectedAnswer !== undefined ? selectedAnswer : null,
+          examName,
+          order: questions.findIndex(q => q.id === question.id) + 1,
+          skipped: isSkipped
+        };
+      });
 
-      // Submit answers and update user's submission status
       const response = await fetch(`${API_BASE_URL}/api/complete-exam`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -326,14 +377,11 @@ const MainExam = () => {
         throw new Error('Failed to submit exam');
       }
 
-      // Clear local storage
       localStorage.removeItem(`exam_${examName}_${candidateId}`);
       localStorage.removeItem(`skipped_${examName}_${candidateId}`);
-
-      // Show completion modal
+      
       setShowCompletionModal(true);
 
-      // Navigate back after delay
       setTimeout(() => {
         navigate('/', { 
           state: { 
