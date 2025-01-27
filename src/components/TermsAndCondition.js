@@ -52,6 +52,12 @@ const TermsAndConditions = () => {
             </p>
           </li>
           <li>
+            <strong style={{ color: '#2c3e50', fontSize: '1.5rem' }}>Technical Issues During Examination</strong>
+            <p style={{ fontSize: '1.1rem' }}>
+              In the event of technical issues or errors during the examination, including but not limited to system failures, connectivity problems, or platform malfunctions, the affected examination results will be deemed invalid and will not be considered for evaluation. In such cases, candidates will receive a full refund of their examination fees. The refund will be processed within 7-10 business days through the original payment method.
+            </p>
+          </li>
+          <li>
             <strong style={{ color: '#2c3e50', fontSize: '1.5rem' }}>Fees and Payments</strong>
             <p style={{ fontSize: '1.1rem' }}>
               Exam fees must be paid in full before registration is considered complete. Fees are non-refundable unless stated otherwise.

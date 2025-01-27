@@ -71,7 +71,7 @@ const PaymentGateway = () => {
 10. Contact for Cancellation Requests
 • Users can contact us at +91 6360785195 for queries or to initiate a cancellation request.`;
 
-  const termsAndConditions = `Terms and Conditions
+const termsAndConditions = `Terms and Conditions
 
 1. Acceptance of Terms
 • By accessing or using our website, you agree to abide by these Terms and Conditions.
@@ -89,25 +89,31 @@ const PaymentGateway = () => {
 • Users must adhere to all instructions provided during the exam.
 • Cheating, plagiarism, or any other form of malpractice is strictly prohibited and will result in disqualification.
 
-5. Fees and Payments
+5. Technical Issues During Examination
+• In the event of any technical issues, system errors, or code-related problems during the examination, the affected results will not be considered valid.
+• Candidates affected by technical issues will receive a full refund of their examination fees.
+• Refunds will be processed within 7-10 business days through the original payment method.
+• This policy ensures fair treatment when technical difficulties impact exam performance.
+
+6. Fees and Payments
 • Exam fees must be paid in full before registration is considered complete.
 • Fees are non-refundable unless stated otherwise.
 
-6. Website Usage Restrictions
+7. Website Usage Restrictions
 • Users may not use the website for any illegal or unauthorized purpose.
 • Users must not attempt to harm, disrupt, or exploit the website's security or functionality.
 
-7. Intellectual Property
+8. Intellectual Property
 • All content on the website, including text, images, logos, and software, is the intellectual property of ARN Private Exam Conduct.
 • Unauthorized reproduction or distribution of any content is prohibited.
 
-8. Limitation of Liability
+9. Limitation of Liability
 • ARN Private Exam Conduct is not liable for any technical issues, loss of data, or other interruptions during the exam.
 
-9. Termination of Services
+10. Termination of Services
 • We reserve the right to suspend or terminate user accounts for violations of these terms.
 
-10. Amendments
+11. Amendments
 • We may update these terms periodically. Users will be notified of significant changes, and continued use of the website signifies acceptance of the updated terms.
 
 Privacy Policy
