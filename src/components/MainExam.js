@@ -5,6 +5,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import Modal from 'react-bootstrap/Modal';
 import "./MainExam.css"
 import API_BASE_URL from "./ApiConifg"
+import jsPDF from 'jspdf';
 
 
 const MainExam = () => {
@@ -346,6 +347,73 @@ const MainExam = () => {
     }
   };
 
+
+  const generatePDF = () => {
+    const pdf = new jsPDF();
+    let yPosition = 20;
+    const lineHeight = 10;
+    const pageWidth = pdf.internal.pageSize.width;
+    
+    // Add header information
+    pdf.setFontSize(16);
+    pdf.text('Exam Summary', pageWidth / 2, yPosition, { align: 'center' });
+    
+    yPosition += lineHeight * 2;
+    pdf.setFontSize(12);
+    pdf.text(`Registration ID: ${candidateId}`, 20, yPosition);
+    yPosition += lineHeight;
+    pdf.text(`Exam Title: ${examName}`, 20, yPosition);
+    yPosition += lineHeight * 2;
+
+    // Add date and time
+    pdf.text(`Date: ${moment().format('MMMM D, YYYY')}`, 20, yPosition);
+    yPosition += lineHeight * 2;
+
+    // Add questions and answers
+    questions.forEach((question, index) => {
+      // Check if we need a new page
+      if (yPosition > 250) {
+        pdf.addPage();
+        yPosition = 20;
+      }
+
+      pdf.setFontSize(11);
+      pdf.text(`Question ${index + 1}: ${question.question}`, 20, yPosition);
+      yPosition += lineHeight;
+
+      // Add selected answer or skipped status
+      const selectedAnswer = selectedAnswers[question.id];
+      const isSkipped = skippedQuestions.includes(question.id);
+
+      if (isSkipped) {
+        pdf.setTextColor(255, 0, 0);
+        pdf.text('Status: Skipped', 30, yPosition);
+      } else if (selectedAnswer !== undefined) {
+        pdf.setTextColor(0, 0, 0);
+        pdf.text(`Selected Answer: ${String.fromCharCode(65 + parseInt(selectedAnswer))}. ${question.options[parseInt(selectedAnswer)]}`, 30, yPosition);
+      }
+
+      pdf.setTextColor(0, 0, 0);
+      yPosition += lineHeight * 2;
+    });
+
+    // Add summary
+    pdf.addPage();
+    yPosition = 20;
+    pdf.setFontSize(14);
+    pdf.text('Exam Statistics', pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += lineHeight * 2;
+    pdf.setFontSize(12);
+    pdf.text(`Total Questions: ${questions.length}`, 20, yPosition);
+    yPosition += lineHeight;
+    pdf.text(`Answered Questions: ${Object.keys(selectedAnswers).length}`, 20, yPosition);
+    yPosition += lineHeight;
+    pdf.text(`Skipped Questions: ${skippedQuestions.length}`, 20, yPosition);
+
+    // Save the PDF
+    pdf.save(`${examName}_${candidateId}_summary.pdf`);
+  };
+
   const handleExamCompletion = async () => {
     try {
       const answersToSubmit = questions.map(question => {
@@ -377,6 +445,9 @@ const MainExam = () => {
         throw new Error('Failed to submit exam');
       }
 
+      // Generate and download PDF
+      generatePDF();
+
       localStorage.removeItem(`exam_${examName}_${candidateId}`);
       localStorage.removeItem(`skipped_${examName}_${candidateId}`);
       
@@ -398,6 +469,14 @@ const MainExam = () => {
       alert('Error submitting exam. Please try again or contact support.');
     }
   };
+
+
+
+
+
+
+  
+
   if (loading) {
     return (
       <div style={styles.examContainer}>
