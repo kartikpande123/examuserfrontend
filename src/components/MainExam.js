@@ -353,43 +353,48 @@ const MainExam = () => {
     let yPosition = 20;
     const lineHeight = 10;
     const pageWidth = pdf.internal.pageSize.width;
-    
+
     // Add header
     pdf.setFontSize(16);
     pdf.text('Exam Summary', pageWidth / 2, yPosition, { align: 'center' });
-    
+
     yPosition += lineHeight * 2;
     pdf.setFontSize(12);
     pdf.text(`Registration ID: ${candidateId}`, 20, yPosition);
     yPosition += lineHeight;
     pdf.text(`Exam Title: ${examName}`, 20, yPosition);
     yPosition += lineHeight * 2;
-  
+
     // Add answers summary
     questions.forEach((question, index) => {
-      // Check if we need a new page
-      if (yPosition > 250) {
-        pdf.addPage();
-        yPosition = 20;
-      }
-  
-      const selectedAnswer = selectedAnswers[question.id];
-      const isSkipped = skippedQuestions.includes(question.id);
-      
-      let answerText;
-      if (isSkipped) {
-        answerText = `Q${index + 1}: Skipped`;
-      } else if (selectedAnswer !== undefined) {
-        answerText = `Q${index + 1}: Selected answer ${String.fromCharCode(65 + parseInt(selectedAnswer))}`;
-      }
-  
-      pdf.text(answerText, 20, yPosition);
-      yPosition += lineHeight;
+        // Check if we need a new page
+        if (yPosition > 270) {
+            pdf.addPage();
+            yPosition = 20;
+        }
+
+        const selectedAnswer = selectedAnswers[question.id];
+        const isSkipped = skippedQuestions.includes(question.id);
+        
+        let answerText;
+        if (isSkipped) {
+            answerText = `Q${index + 1}: Skipped`;
+        } else if (selectedAnswer !== undefined) {
+            // Ensure the selected answer is a valid number before converting to A, B, C, D
+            const answerLetter = String.fromCharCode(65 + parseInt(selectedAnswer, 10)); 
+            answerText = `Q${index + 1}: Selected answer ${answerLetter}`;
+        } else {
+            answerText = `Q${index + 1}: No answer recorded`;
+        }
+
+        pdf.text(answerText, 20, yPosition);
+        yPosition += lineHeight;
     });
-  
+
     // Save the PDF
     pdf.save(`${examName}_${candidateId}_summary.pdf`);
-  };
+};
+
 
   const handleExamCompletion = async () => {
     try {
