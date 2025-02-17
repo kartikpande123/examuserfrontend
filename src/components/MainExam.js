@@ -354,7 +354,7 @@ const MainExam = () => {
     const lineHeight = 10;
     const pageWidth = pdf.internal.pageSize.width;
     
-    // Add header information
+    // Add header
     pdf.setFontSize(16);
     pdf.text('Exam Summary', pageWidth / 2, yPosition, { align: 'center' });
     
@@ -364,52 +364,29 @@ const MainExam = () => {
     yPosition += lineHeight;
     pdf.text(`Exam Title: ${examName}`, 20, yPosition);
     yPosition += lineHeight * 2;
-
-    // Add date and time
-    pdf.text(`Date: ${moment().format('MMMM D, YYYY')}`, 20, yPosition);
-    yPosition += lineHeight * 2;
-
-    // Add questions and answers
+  
+    // Add answers summary
     questions.forEach((question, index) => {
       // Check if we need a new page
       if (yPosition > 250) {
         pdf.addPage();
         yPosition = 20;
       }
-
-      pdf.setFontSize(11);
-      pdf.text(`Question ${index + 1}: ${question.question}`, 20, yPosition);
-      yPosition += lineHeight;
-
-      // Add selected answer or skipped status
+  
       const selectedAnswer = selectedAnswers[question.id];
       const isSkipped = skippedQuestions.includes(question.id);
-
+      
+      let answerText;
       if (isSkipped) {
-        pdf.setTextColor(255, 0, 0);
-        pdf.text('Status: Skipped', 30, yPosition);
+        answerText = `Q${index + 1}: Skipped`;
       } else if (selectedAnswer !== undefined) {
-        pdf.setTextColor(0, 0, 0);
-        pdf.text(`Selected Answer: ${String.fromCharCode(65 + parseInt(selectedAnswer))}. ${question.options[parseInt(selectedAnswer)]}`, 30, yPosition);
+        answerText = `Q${index + 1}: Selected answer ${String.fromCharCode(65 + parseInt(selectedAnswer))}`;
       }
-
-      pdf.setTextColor(0, 0, 0);
-      yPosition += lineHeight * 2;
+  
+      pdf.text(answerText, 20, yPosition);
+      yPosition += lineHeight;
     });
-
-    // Add summary
-    pdf.addPage();
-    yPosition = 20;
-    pdf.setFontSize(14);
-    pdf.text('Exam Statistics', pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += lineHeight * 2;
-    pdf.setFontSize(12);
-    pdf.text(`Total Questions: ${questions.length}`, 20, yPosition);
-    yPosition += lineHeight;
-    pdf.text(`Answered Questions: ${Object.keys(selectedAnswers).length}`, 20, yPosition);
-    yPosition += lineHeight;
-    pdf.text(`Skipped Questions: ${skippedQuestions.length}`, 20, yPosition);
-
+  
     // Save the PDF
     pdf.save(`${examName}_${candidateId}_summary.pdf`);
   };
