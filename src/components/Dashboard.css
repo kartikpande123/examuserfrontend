@@ -297,3 +297,102 @@
   font-weight: bold;
   transition: all 0.3s ease;
 }
+
+/* Resource Cards */
+.resource-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-top: 4px solid transparent;
+}
+
+.resource-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.resource-card.practice-tests {
+  border-top-color: #4e73df;
+}
+
+.resource-card.study-materials {
+  border-top-color: #1cc88a;
+}
+
+.resource-card-header {
+  padding: 1.25rem;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.resource-card-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.resource-icon {
+  color: #4e73df;
+}
+
+.resource-card.study-materials .resource-icon {
+  color: #1cc88a;
+}
+
+.resource-card-body {
+  padding: 0 1.25rem 1.25rem;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.resource-card-body p {
+  color: #4a5568;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+  flex-grow: 1;
+}
+
+.resource-btn {
+  background-color: #4e73df;
+  color: white;
+  border: none;
+  padding: 0.6rem;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s;
+  width: 100%;
+  margin-top: auto;
+}
+
+.resource-card.study-materials .resource-btn {
+  background-color: #1cc88a;
+}
+
+.resource-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* Responsive adjustments for resource cards */
+@media (max-width: 992px) {
+  .resource-card {
+    margin-bottom: 1.5rem;
+  }
+}
+
+.no-exam-message {
+  text-align: center;
+  color: #6c757d;
+  padding: 2rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}

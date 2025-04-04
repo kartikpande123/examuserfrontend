@@ -1,0 +1,27 @@
+.register-new-btn {
+    background: linear-gradient(135deg, #ff6584 0%, #ff4b8a 100%);
+    box-shadow: 0 4px 15px rgba(255, 101, 132, 0.4);
+    border: none;
+    transition: all 0.3s ease;
+  }
+  
+  .register-new-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(255, 101, 132, 0.6);
+  }
+  
+  .btn-gradient-primary {
+    background: linear-gradient(135deg, #4a6bff 0%, #6c63ff 100%);
+    border: none;
+    color: white;
+  }
+  
+  .exam-details-container {
+    background-color: #f8f9fa;
+    border-left: 4px solid #4a6bff;
+  }
+  
+  .form-control-lg:focus {
+    border-color: #4a6bff;
+    box-shadow: 0 0 0 0.25rem rgba(74, 107, 255, 0.25);
+  }

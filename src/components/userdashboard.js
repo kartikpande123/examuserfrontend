@@ -6,6 +6,12 @@ import {
   HelpCircle,
   Info,
   BookOpen,
+  Bookmark,
+  FileText,
+  Award,
+  ShoppingCart,
+  BookAIcon,
+  BookCopyIcon,
 } from "lucide-react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import "./Dashboard.css";
@@ -13,12 +19,13 @@ import logo from "../Images/LOGO.jpg";
 import "bootstrap/dist/js/bootstrap.bundle.min";
 import API_BASE_URL from "./ApiConifg";
 import WelcomePopup from "./WelcomePopup";
+import { SuitDiamond } from "react-bootstrap-icons";
 
 const Dashboard = () => {
   const [exam, setExam] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [temporarilyHidden, setTemporarilyHidden] = useState(false);
-  const [showPopup, setShowPopup] = useState(false); // Added state for popup
+  const [showPopup, setShowPopup] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -89,6 +96,8 @@ const Dashboard = () => {
   const goToExamForm = () => navigate("/examform");
   const goToExamCheckAnswers = () => navigate("/checkanswers");
   const goToExamWinnersDashboard = () => navigate("/findwinner");
+  const goToPracticeTests = () => navigate("/practicetestdashboard");
+  const goToStudyMaterials = () => navigate("/pdfsyllabusdashboard");
 
   const unreadCount = notifications.filter((n) => !n.read).length;
   const displayCount = unreadCount > 3 ? "3+" : unreadCount;
@@ -132,6 +141,11 @@ const Dashboard = () => {
               style={{ fontSize: "16px" }}
             >
               <NavItem
+                to="/practiceexamentry"
+                icon={<BookAIcon size={20} />}
+                text="My Practice Test"
+              />
+              <NavItem
                 to="/upcomingexams"
                 icon={<Calendar size={20} />}
                 text="Upcoming Exam"
@@ -165,6 +179,28 @@ const Dashboard = () => {
         <h1 className="dashboard-title">Exam Dashboard</h1>
 
         <div className="row g-4 justify-content-center">
+          {/* Practice Tests Card - Always Visible */}
+          <div className="col-12 col-md-3 col-lg-3">
+            <div className="resource-card practice-tests">
+              <div className="resource-card-header">
+                <BookCopyIcon size={24} className="resource-icon" />
+                <h3>Practice Tests</h3>
+              </div>
+              <div className="resource-card-body">
+                <p>
+                  Access premium practice tests to prepare for your exams with real exam-like questions.
+                </p>
+                <button 
+                  className="resource-btn" 
+                  onClick={goToPracticeTests}
+                >
+                  Explore Tests
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Exam Card - Conditionally Rendered */}
           {exam ? (
             <div className="col-12 col-md-6 col-lg-6">
               <div className="exam-card">
@@ -195,10 +231,33 @@ const Dashboard = () => {
               </div>
             </div>
           ) : (
-            <div className="col-12">
-              <p className="no-exam-message">No exams scheduled for today.</p>
+            <div className="col-12 col-md-6 col-lg-6">
+              <div className="no-exam-message">
+                <p>No exams scheduled for today.</p>
+              </div>
             </div>
           )}
+
+          {/* Study Materials Card - Always Visible */}
+          <div className="col-12 col-md-3 col-lg-3">
+            <div className="resource-card study-materials">
+              <div className="resource-card-header">
+                <Bookmark size={24} className="resource-icon" />
+                <h3>Study Materials</h3>
+              </div>
+              <div className="resource-card-body">
+                <p>
+                  Comprehensive study guides, notes, and reference materials to help you ace your exams.
+                </p>
+                <button 
+                  className="resource-btn" 
+                  onClick={goToStudyMaterials}
+                >
+                  Explore Materials
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="action-buttons">
@@ -219,7 +278,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Footer */}
       <footer className="footer mt-5 bg-light py-3">
         <div className="container text-center">
           <p className="mb-2">

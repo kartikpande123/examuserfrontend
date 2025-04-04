@@ -1,0 +1,141 @@
+/* Base styles refinements */
+.card {
+    margin: 0 15px;
+  }
+  
+  .option-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Mobile Responsive Styles */
+  @media screen and (max-width: 768px) {
+    /* Container adjustments */
+    .container {
+      padding: 0 10px;
+    }
+  
+    /* Card adjustments */
+    .card {
+      margin: 0 8px;
+    }
+  
+    /* Exam header adjustments */
+    .card .d-flex.justify-content-between {
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+    }
+  
+    /* Title adjustments */
+    .card h2 {
+      font-size: 1.5rem;
+      text-align: center;
+    }
+  
+    /* Question number adjustments */
+    .questionNumber {
+      font-size: 0.9rem;
+      padding: 6px 12px !important;
+    }
+  
+    /* Question text adjustments */
+    .card-body h4 {
+      font-size: 1.1rem;
+      line-height: 1.4;
+    }
+  
+    /* Options grid adjustments */
+    .optionsContainer {
+      grid-template-columns: 1fr !important;
+      gap: 10px !important;
+      padding: 15px !important;
+    }
+  
+    /* Option box adjustments */
+    .option-box {
+      padding: 12px !important;
+    }
+  
+    /* Navigation buttons container */
+    .d-flex.justify-content-between.align-items-center.mt-4 {
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+  
+    /* Navigation buttons adjustments */
+    .navigationButton {
+      padding: 6px 15px !important;
+      font-size: 0.9rem !important;
+    }
+  
+    /* Previous button */
+    .btn-outline-primary {
+      order: 2;
+      width: 100%;
+    }
+  
+    /* Skip and Next buttons container */
+    .d-flex.justify-content-between.align-items-center.mt-4 > div {
+      order: 1;
+      width: 100%;
+      display: flex;
+      gap: 8px;
+    }
+  
+    /* Skip and Next buttons */
+    .btn-warning,
+    .btn-success {
+      flex: 1;
+      white-space: nowrap;
+    }
+  
+    /* Button icons */
+    .fas {
+      font-size: 0.9rem;
+    }
+  }
+  
+  /* Small mobile devices */
+  @media screen and (max-width: 480px) {
+    /* Further refinements for very small screens */
+    .card {
+      margin: 0;
+    }
+  
+    .card-body {
+      padding: 15px !important;
+    }
+  
+    /* Make buttons more compact */
+    .navigationButton {
+      padding: 6px 12px !important;
+    }
+  
+    /* Adjust option text size */
+    .option-box {
+      font-size: 0.9rem;
+    }
+  }
+  
+  /* Landscape orientation adjustments */
+  @media screen and (max-width: 768px) and (orientation: landscape) {
+    .optionsContainer {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+  
+    /* Keep buttons in a row for landscape */
+    .d-flex.justify-content-between.align-items-center.mt-4 {
+      flex-wrap: nowrap;
+    }
+  
+    .btn-outline-primary {
+      width: auto;
+      order: 1;
+    }
+  
+    .d-flex.justify-content-between.align-items-center.mt-4 > div {
+      width: auto;
+      order: 2;
+    }
+  }
