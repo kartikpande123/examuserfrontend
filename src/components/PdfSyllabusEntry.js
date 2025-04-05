@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { API_BASE_URL } from './ApiConifg';
+import API_BASE_URL from './ApiConifg';
 import SecurePdfViewer from './SecurePdfViewer';
 
 export default function PdfSyllabusEntry() {
