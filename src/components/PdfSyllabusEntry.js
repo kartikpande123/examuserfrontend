@@ -11,6 +11,10 @@ export default function PdfSyllabusEntry() {
   const [activeSyllabuses, setActiveSyllabuses] = useState([]);
   const [selectedSyllabus, setSelectedSyllabus] = useState(null);
   const [viewerOpen, setViewerOpen] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState(null);
+  
+  // Use the API_BASE_URL from your config
+  const apiBaseUrl = API_BASE_URL || 'https://arnprivateexamconduct.in';
   
   // Design-focused styles
   const styles = {
@@ -70,42 +74,113 @@ export default function PdfSyllabusEntry() {
     setError('');
     
     try {
-      const response = await fetch(`${API_BASE_URL}/verify-student-syllabus/${studentId}`);
-      const data = await response.json();
+      // Modified API call to use the new endpoint
+      const response = await fetch(`${apiBaseUrl}/getPurchase/${studentId}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors',
+        credentials: 'same-origin',
+      });
       
+      // Check if response is OK before trying to parse JSON
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to verify student');
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          // If it's JSON, parse the error
+          const errorData = await response.json();
+          throw new Error(errorData.message || `Error: ${response.status}`);
+        } else {
+          // If it's not JSON (likely HTML error page)
+          throw new Error(`Server error: ${response.status}`);
+        }
       }
       
-      if (!data.exists) {
-        setError('Student not found');
+      // Parse the response data
+      const data = await response.json();
+      
+      if (!data || data.length === 0) {
+        setError('Student not found or no purchases available');
         setStudentDetails(null);
         setActiveSyllabuses([]);
         return;
       }
       
-      setStudentDetails(data.studentDetails);
-      setActiveSyllabuses(data.studentDetails.activeSyllabuses);
+      // Set student details from the first purchase (assuming student info is consistent across purchases)
+      const studentInfo = {
+        name: data[0].name || data[0].studentName || 'Student',
+        id: data[0].studentId
+      };
       
-      if (data.studentDetails.activeSyllabuses.length === 0) {
+      setStudentDetails(studentInfo);
+      
+      // Map the purchases to match the structure expected by the component
+      const formattedSyllabuses = data.map(purchase => ({
+        syllabusTitle: purchase.syllabusTitle || purchase.title || 'Syllabus',
+        syllabusCategory: purchase.syllabusCategory || purchase.category || 'General',
+        syllabusFilePath: purchase.syllabusFilePath || purchase.filePath,
+        purchaseDate: purchase.purchaseDate || purchase.createdAt,
+        expirationDate: purchase.expirationDate,
+        remainingDays: purchase.remainingDays
+      }));
+      
+      setActiveSyllabuses(formattedSyllabuses);
+      
+      if (formattedSyllabuses.length === 0) {
         setError('No active syllabus purchases found');
       }
     } catch (err) {
-      setError(err.message || 'An error occurred. Please try again.');
-      console.error(err);
+      // Improved error handling for CORS issues
+      if (err.message === "Failed to fetch") {
+        setError('Server connection error. This may be due to CORS restrictions. Please try again later or contact support.');
+      } else if (err.message.includes('NetworkError')) {
+        setError('Network error. This may be due to CORS restrictions. Please ensure you have proper server configuration.');
+      } else {
+        setError(err.message || 'An error occurred. Please try again.');
+      }
+      console.error('Fetch error:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleOpenSyllabus = (syllabus) => {
-    setSelectedSyllabus(syllabus);
-    setViewerOpen(true);
+  const handleOpenSyllabus = async (syllabus) => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      // Get signed URL for the syllabus PDF
+      const response = await fetch(`${apiBaseUrl}/get-syllabus-url/${encodeURIComponent(syllabus.syllabusFilePath)}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to get PDF URL: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setPdfUrl(data.signedUrl);
+      setSelectedSyllabus(syllabus);
+      setViewerOpen(true);
+    } catch (err) {
+      setError(`Could not retrieve syllabus: ${err.message}`);
+      console.error('Error getting syllabus URL:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const closePdfViewer = () => {
     setViewerOpen(false);
     setSelectedSyllabus(null);
+    setPdfUrl(null);
   };
 
   // Simple date formatter without using date-fns
@@ -154,7 +229,7 @@ export default function PdfSyllabusEntry() {
   };
 
   // If PDF viewer is open, show it instead of the main content
-  if (viewerOpen && selectedSyllabus) {
+  if (viewerOpen && selectedSyllabus && pdfUrl) {
     return (
       <div className="position-relative">
         <button 
@@ -165,6 +240,7 @@ export default function PdfSyllabusEntry() {
           Back to Syllabuses
         </button>
         <SecurePdfViewer 
+          pdfUrl={pdfUrl}
           syllabusFilePath={selectedSyllabus.syllabusFilePath}
           studentName={studentDetails?.name}
         />
