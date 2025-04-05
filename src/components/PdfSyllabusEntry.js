@@ -74,7 +74,7 @@ export default function PdfSyllabusEntry() {
     setError('');
     
     try {
-      // Modified API call to use the new endpoint
+      // First, check if the API is accessible
       const response = await fetch(`${apiBaseUrl}/getPurchase/${studentId}`, {
         method: 'GET',
         headers: {
@@ -85,20 +85,25 @@ export default function PdfSyllabusEntry() {
         credentials: 'same-origin',
       });
       
-      // Check if response is OK before trying to parse JSON
+      // Check response type before parsing
+      const contentType = response.headers.get('content-type');
+      
       if (!response.ok) {
-        const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
-          // If it's JSON, parse the error
+          // If error response is JSON, parse it
           const errorData = await response.json();
           throw new Error(errorData.message || `Error: ${response.status}`);
         } else {
-          // If it's not JSON (likely HTML error page)
-          throw new Error(`Server error: ${response.status}`);
+          // If error response is HTML or something else
+          throw new Error(`Server returned ${response.status}. Check your API endpoint.`);
         }
       }
       
-      // Parse the response data
+      // Only try to parse JSON if we have a JSON content type
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Server did not return JSON. Got: ' + contentType);
+      }
+      
       const data = await response.json();
       
       if (!data || data.length === 0) {
@@ -108,7 +113,7 @@ export default function PdfSyllabusEntry() {
         return;
       }
       
-      // Set student details from the first purchase (assuming student info is consistent across purchases)
+      // Process data as before...
       const studentInfo = {
         name: data[0].name || data[0].studentName || 'Student',
         id: data[0].studentId
@@ -116,7 +121,6 @@ export default function PdfSyllabusEntry() {
       
       setStudentDetails(studentInfo);
       
-      // Map the purchases to match the structure expected by the component
       const formattedSyllabuses = data.map(purchase => ({
         syllabusTitle: purchase.syllabusTitle || purchase.title || 'Syllabus',
         syllabusCategory: purchase.syllabusCategory || purchase.category || 'General',
@@ -132,15 +136,16 @@ export default function PdfSyllabusEntry() {
         setError('No active syllabus purchases found');
       }
     } catch (err) {
-      // Improved error handling for CORS issues
+      console.error('Fetch error:', err);
+      
+      // Better error handling
       if (err.message === "Failed to fetch") {
-        setError('Server connection error. This may be due to CORS restrictions. Please try again later or contact support.');
-      } else if (err.message.includes('NetworkError')) {
-        setError('Network error. This may be due to CORS restrictions. Please ensure you have proper server configuration.');
+        setError('Server connection error. Please check your network connection and API configuration.');
+      } else if (err.message.includes('NetworkError') || err.message.includes('CORS')) {
+        setError('Network error. This may be due to CORS restrictions. Please ensure your server allows requests from this origin.');
       } else {
         setError(err.message || 'An error occurred. Please try again.');
       }
-      console.error('Fetch error:', err);
     } finally {
       setLoading(false);
     }
