@@ -5,123 +5,283 @@ import SecurePdfViewer from './SecurePdfViewer';
 
 export default function PdfSyllabusEntry() {
   const [studentId, setStudentId] = useState('');
-  const [studentData, setStudentData] = useState(null);
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [studentDetails, setStudentDetails] = useState(null);
+  const [activeSyllabuses, setActiveSyllabuses] = useState([]);
+  const [selectedSyllabus, setSelectedSyllabus] = useState(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  
+  // Design-focused styles
+  const styles = {
+    container: {
+      backgroundColor: '#f4f6f9',
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px'
+    },
+    card: {
+      maxWidth: '700px',
+      width: '100%',
+      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+      borderRadius: '12px',
+      border: 'none'
+    },
+    header: {
+      backgroundColor: '#2c3e50',
+      color: 'white',
+      padding: '20px',
+      borderTopLeftRadius: '12px',
+      borderTopRightRadius: '12px'
+    },
+    input: {
+      borderRadius: '25px',
+      padding: '10px 20px'
+    },
+    button: {
+      borderRadius: '25px',
+      padding: '10px 20px',
+      fontWeight: 'bold'
+    },
+    syllabusCard: {
+      border: '1px solid #e0e0e0',
+      borderRadius: '10px',
+      padding: '15px',
+      marginBottom: '15px',
+      transition: 'all 0.2s ease'
+    },
+    badge: {
+      borderRadius: '12px',
+      padding: '5px 10px',
+      fontSize: '0.8rem',
+      fontWeight: 'bold'
+    }
+  };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!studentId.trim()) return;
+  const verifyStudent = async () => {
+    if (!studentId.trim()) {
+      setError('Please enter a Student ID');
+      return;
+    }
     
     setLoading(true);
-    setError(null);
+    setError('');
     
     try {
       const response = await fetch(`${API_BASE_URL}/verify-student-syllabus/${studentId}`);
+      
+      // Check for content type before parsing as JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Server response is not valid JSON. Please contact support.');
+      }
+      
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to fetch student data');
+        throw new Error(data.message || 'Failed to verify student');
       }
       
-      setStudentData(data);
-    } catch (error) {
-      console.error('Error fetching student data:', error);
-      setError(error.message);
-      setStudentData(null);
+      if (!data.exists) {
+        setError('Student not found');
+        setStudentDetails(null);
+        setActiveSyllabuses([]);
+        return;
+      }
+      
+      setStudentDetails(data.studentDetails);
+      setActiveSyllabuses(data.studentDetails.activeSyllabuses);
+      
+      if (data.studentDetails.activeSyllabuses.length === 0) {
+        setError('No active syllabus purchases found');
+      }
+    } catch (err) {
+      if (err.message === 'Unexpected token < in JSON at position 0') {
+        setError('Invalid server response. The API may be offline or returning HTML instead of JSON.');
+      } else {
+        setError(err.message || 'An error occurred. Please try again.');
+      }
+      console.error(err);
+      setStudentDetails(null);
+      setActiveSyllabuses([]);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleOpenSyllabus = (syllabus) => {
+    setSelectedSyllabus(syllabus);
+    setViewerOpen(true);
+  };
+
+  const closePdfViewer = () => {
+    setViewerOpen(false);
+    setSelectedSyllabus(null);
+  };
+
+  // Simple date formatter without using date-fns
+  const formatDate = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return dateString; // Return original if invalid
+      }
+      
+      const months = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+      
+      const month = months[date.getMonth()];
+      const day = date.getDate();
+      const year = date.getFullYear();
+      
+      return `${month} ${day}, ${year}`;
+    } catch (e) {
+      return dateString;
+    }
+  };
+  
+  // Calculate remaining days without date-fns
+  const calculateRemainingDays = (expirationDateString) => {
+    try {
+      const expirationDate = new Date(expirationDateString);
+      const currentDate = new Date();
+      
+      // Reset time part for accurate day calculation
+      expirationDate.setHours(0, 0, 0, 0);
+      currentDate.setHours(0, 0, 0, 0);
+      
+      // Calculate the difference in milliseconds
+      const timeDiff = expirationDate.getTime() - currentDate.getTime();
+      
+      // Convert to days
+      const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+      
+      return daysDiff > 0 ? daysDiff : 0;
+    } catch (e) {
+      return 0;
+    }
+  };
+
+  // If PDF viewer is open, show it instead of the main content
+  if (viewerOpen && selectedSyllabus) {
+    return (
+      <div className="position-relative">
+        <button 
+          className="btn btn-primary position-absolute" 
+          style={{ top: 20, left: 20, zIndex: 1000 }}
+          onClick={closePdfViewer}
+        >
+          Back to Syllabuses
+        </button>
+        <SecurePdfViewer 
+          syllabusFilePath={selectedSyllabus.syllabusFilePath}
+          studentName={studentDetails?.name}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="container mt-4">
-      <div className="card">
-        <div className="card-header bg-primary text-white">
-          <h2 className="mb-0">Student Syllabus Verification</h2>
+    <div style={styles.container}>
+      <div className="card" style={styles.card}>
+        <div style={styles.header}>
+          <h2 className="text-center mb-0">My Syllabus Verification</h2>
         </div>
-        <div className="card-body">
-          <form onSubmit={handleSubmit}>
-            <div className="mb-3">
-              <label htmlFor="studentId" className="form-label">Enter Student ID:</label>
-              <div className="input-group">
-                <input
-                  type="text"
-                  className="form-control"
-                  id="studentId"
-                  value={studentId}
-                  onChange={(e) => setStudentId(e.target.value)}
-                  placeholder="e.g., STD12345"
-                  required
-                />
-                <button 
-                  type="submit" 
-                  className="btn btn-primary"
-                  disabled={loading}
-                >
-                  {loading ? 'Checking...' : 'Verify'}
-                </button>
-              </div>
-            </div>
-          </form>
-
-          {loading && (
-            <div className="d-flex justify-content-center my-4">
-              <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">Loading...</span>
-              </div>
-            </div>
-          )}
-
+        <div className="card-body p-4">
+          <div className="mb-3">
+            <label className="form-label">Enter Student ID</label>
+            <input 
+              type="text" 
+              className="form-control" 
+              style={styles.input}
+              value={studentId}
+              onChange={(e) => {
+                setStudentId(e.target.value);
+                setError('');
+              }}
+              placeholder="Enter your Student ID"
+              disabled={loading}
+            />
+          </div>
+          
           {error && (
-            <div className="alert alert-danger mt-3" role="alert">
+            <div className="alert alert-danger" role="alert">
               {error}
             </div>
           )}
+          
+          <button 
+            className="btn btn-primary w-100" 
+            style={styles.button}
+            onClick={verifyStudent}
+            disabled={loading}
+          >
+            {loading ? (
+              <span>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Verifying...
+              </span>
+            ) : (
+              'Verify & Find Syllabus'
+            )}
+          </button>
 
-          {studentData && studentData.exists && (
-            <div className="mt-4">
-              <h3>Student Details</h3>
-              <div className="card mb-3">
-                <div className="card-body">
-                  <h5 className="card-title">{studentData.studentDetails.name}</h5>
-                  <p className="card-text">ID: {studentData.studentDetails.id}</p>
-                </div>
-              </div>
-
-              <h4>Active Syllabuses</h4>
-              {studentData.studentDetails.activeSyllabuses.length > 0 ? (
-                <div className="row">
-                  {studentData.studentDetails.activeSyllabuses.map((syllabus, index) => (
-                    <div className="col-md-6 mb-3" key={index}>
-                      <div className="card h-100">
-                        <div className="card-body">
-                          <h5 className="card-title">{syllabus.syllabusName}</h5>
-                          <p className="card-text">
-                            <strong>Purchase Date:</strong> {new Date(syllabus.purchaseDate).toLocaleDateString()}
-                          </p>
-                          <p className="card-text">
-                            <strong>Remaining Days:</strong> {syllabus.remainingDays}
-                          </p>
-                          {syllabus.pdfUrl && (
-                            <SecurePdfViewer pdfUrl={syllabus.pdfUrl} />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="alert alert-info">
-                  No active syllabuses found for this student.
-                </div>
-              )}
+          {/* Student Details Display */}
+          {studentDetails && (
+            <div className="mt-4 alert alert-success">
+              <h5 className="mb-0">Welcome, {studentDetails.name}</h5>
             </div>
           )}
 
-          {studentData && !studentData.exists && (
-            <div className="alert alert-warning mt-3" role="alert">
-              Student not found. Please check the ID and try again.
+          {/* Active Syllabuses Display */}
+          {activeSyllabuses.length > 0 && (
+            <div className="mt-4">
+              <h4>Your Active Syllabuses</h4>
+              {activeSyllabuses.map((syllabus, index) => {
+                // Calculate remaining days if not already provided
+                const remainingDays = syllabus.remainingDays !== undefined ? 
+                  syllabus.remainingDays : 
+                  calculateRemainingDays(syllabus.expirationDate);
+                  
+                return (
+                  <div 
+                    key={index} 
+                    style={styles.syllabusCard} 
+                    className="d-flex flex-column flex-md-row justify-content-between align-items-md-center"
+                  >
+                    <div className="flex-grow-1">
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <h5 className="mb-0">{syllabus.syllabusTitle}</h5>
+                        <span 
+                          className="badge bg-success" 
+                          style={styles.badge}
+                        >
+                          {remainingDays} {remainingDays === 1 ? 'day' : 'days'} remaining
+                        </span>
+                      </div>
+                      <p className="mb-1">
+                        <strong>Category:</strong> {syllabus.syllabusCategory}
+                      </p>
+                      <p className="mb-1">
+                        <strong>Purchase Date:</strong> {formatDate(syllabus.purchaseDate)}
+                      </p>
+                      <p className="mb-0">
+                        <strong>Expires On:</strong> {formatDate(syllabus.expirationDate)}
+                      </p>
+                    </div>
+                    <button 
+                      className="btn btn-primary mt-3 mt-md-0"
+                      onClick={() => handleOpenSyllabus(syllabus)}
+                    >
+                      View Securely
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
