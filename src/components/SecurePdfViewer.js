@@ -1,17 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { Worker, Viewer, SpecialZoomLevel } from '@react-pdf-viewer/core';
-import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
-import '@react-pdf-viewer/core/lib/styles/index.css';
-import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 import API_BASE_URL from './ApiConifg';
 
+// PDF.js uses a global variable to find its worker
+window.pdfjsLib = window.pdfjsLib || {};
+window.pdfjsLib.GlobalWorkerOptions = window.pdfjsLib.GlobalWorkerOptions || {};
+window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+
 export default function SecurePdfViewer({ syllabusFilePath }) {
-  const [pdfBlob, setPdfBlob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [numPages, setNumPages] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const canvasRef = useRef(null);
+  const [scale, setScale] = useState(1.5);
   const [isMobile, setIsMobile] = useState(false);
-  const viewerRef = useRef(null);
+  const pdfDocRef = useRef(null);
 
   // Detect mobile view
   useEffect(() => {
@@ -21,87 +25,48 @@ export default function SecurePdfViewer({ syllabusFilePath }) {
     return () => window.removeEventListener('resize', updateDevice);
   }, []);
 
-  // Plugin config
-  const defaultLayoutPluginInstance = defaultLayoutPlugin({
-    toolbarPlugin: {
-      fullScreenPlugin: {
-        onEnterFullScreen: (zoom) => zoom(isMobile ? 1 : 1.5),
-        onExitFullScreen: (zoom) => zoom(isMobile ? 1 : 1.5),
-      },
-    },
-  });
-
-  // Remove unwanted toolbar buttons
-  const { renderDefaultToolbar } = defaultLayoutPluginInstance.toolbarPluginInstance;
-  defaultLayoutPluginInstance.toolbarPluginInstance.renderToolbar = (Toolbar) => (
-    <Toolbar>
-      {(slots) => {
-        const filteredSlots = {};
-        Object.keys(slots).forEach((key) => {
-          if (!['download', 'print', 'save', 'open', 'upload'].some(term =>
-            key.toLowerCase().includes(term)
-          )) {
-            filteredSlots[key] = slots[key];
-          }
-        });
-
-        return renderDefaultToolbar({
-          ...filteredSlots,
-          Download: () => <></>,
-          Print: () => <></>,
-          Save: () => <></>,
-          Open: () => <></>,
-        });
-      }}
-    </Toolbar>
-  );
-
-  // Fetch PDF as blob
+  // Load the PDF
   useEffect(() => {
-    const fetchPdfBlob = async () => {
-      setLoading(true);
-      if (!syllabusFilePath) {
-        setError('No file path provided');
-        setLoading(false);
-        return;
-      }
-
+    const loadPdf = async () => {
       try {
-        const encoded = encodeURIComponent(syllabusFilePath);
-        const response = await fetch(`${API_BASE_URL}/proxy-pdf/${encoded}`, {
-          headers: {
-            'Accept': 'application/pdf',
-            'Cache-Control': 'no-cache'
-          }
-        });
+        setLoading(true);
+        setError('');
         
-        if (!response.ok) {
-          throw new Error(`HTTP error: ${response.status}`);
+        if (!syllabusFilePath) {
+          setError('No file path provided');
+          setLoading(false);
+          return;
         }
+
+        const encoded = encodeURIComponent(syllabusFilePath);
+        const pdfUrl = `${API_BASE_URL}/proxy-pdf/${encoded}`;
         
-        const blob = await response.blob();
-        const pdfObjectUrl = URL.createObjectURL(blob);
-        setPdfBlob(pdfObjectUrl);
+        // Load the PDF.js script dynamically
+        const pdfjsLib = await import('pdfjs-dist');
+        
+        // Load document
+        const loadingTask = pdfjsLib.getDocument({
+          url: pdfUrl,
+          withCredentials: false
+        });
+
+        const pdf = await loadingTask.promise;
+        pdfDocRef.current = pdf;
+        setNumPages(pdf.numPages);
+        
+        // Render first page
+        await renderPage(1, pdf);
         setLoading(false);
       } catch (err) {
-        console.error('Error fetching PDF:', err);
-        setError('Failed to load the PDF file');
+        console.error('Error loading PDF:', err);
+        setError(`Failed to load the PDF: ${err.message}`);
         setLoading(false);
       }
     };
 
-    fetchPdfBlob();
+    loadPdf();
     
-    // Clean up object URL when component unmounts
-    return () => {
-      if (pdfBlob) {
-        URL.revokeObjectURL(pdfBlob);
-      }
-    };
-  }, [syllabusFilePath]);
-
-  // Disable keyboard shortcuts & right-click
-  useEffect(() => {
+    // Disable keyboard shortcuts & right-click
     const disableContextMenu = (e) => e.preventDefault();
     const disableKeys = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.preventDefault) e.preventDefault();
@@ -115,51 +80,87 @@ export default function SecurePdfViewer({ syllabusFilePath }) {
       document.removeEventListener('contextmenu', disableContextMenu);
       document.removeEventListener('keydown', disableKeys);
     };
-  }, []);
+  }, [syllabusFilePath]);
 
-  // Inject custom CSS to hide download/print buttons
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.textContent = `
-      [data-testid*="download"], [aria-label*="download"], [title*="download"],
-      [data-testid*="print"], [aria-label*="print"], [title*="print"],
-      [data-testid*="save"], [aria-label*="save"], [title*="save"],
-      [data-testid*="open"], [aria-label*="open"], [title*="open"],
-      [data-testid*="upload"], [aria-label*="upload"], [title*="upload"] {
-        display: none !important;
-      }
-    `;
-    document.head.appendChild(style);
-    return () => document.head.removeChild(style);
-  }, []);
-
-  const Watermark = () => (
-    <div style={{
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      width: '100%',
-      height: '100%',
-      pointerEvents: 'none',
-      zIndex: 1000,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      opacity: 0.1,
-      transform: 'rotate(-30deg)',
-      fontSize: isMobile ? '20px' : '40px',
-      color: '#000',
-      fontWeight: 'bold',
-    }}>
-      ARN Private Exam Conduct
-    </div>
-  );
-
-  const handleError = (e) => {
-    console.error('PDF error:', e);
-    setError('Unable to load PDF');
+  // Render a specific page
+  const renderPage = async (pageNum, pdfDoc = null) => {
+    try {
+      const pdf = pdfDoc || pdfDocRef.current;
+      if (!pdf) return;
+      
+      const page = await pdf.getPage(pageNum);
+      const canvas = canvasRef.current;
+      const context = canvas.getContext('2d');
+      
+      // Calculate scale based on viewport to fit the width
+      const viewport = page.getViewport({ scale });
+      
+      // Set canvas dimensions to match the viewport
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+      
+      // Render the PDF page
+      const renderContext = {
+        canvasContext: context,
+        viewport: viewport,
+      };
+      
+      await page.render(renderContext).promise;
+      
+      // Add watermark
+      drawWatermark(context, canvas.width, canvas.height);
+      
+      setCurrentPage(pageNum);
+    } catch (err) {
+      console.error('Error rendering page:', err);
+      setError(`Failed to render page: ${err.message}`);
+    }
   };
-
+  
+  // Draw watermark on the canvas
+  const drawWatermark = (context, width, height) => {
+    const text = "ARN Private Exam Conduct";
+    context.save();
+    context.globalAlpha = 0.1;
+    context.font = isMobile ? '20px Arial' : '40px Arial';
+    context.fillStyle = '#000';
+    context.translate(width / 2, height / 2);
+    context.rotate(-Math.PI / 6); // -30 degrees
+    context.textAlign = 'center';
+    context.fillText(text, 0, 0);
+    context.restore();
+  };
+  
+  // Change page handlers
+  const prevPage = () => {
+    if (currentPage > 1) {
+      renderPage(currentPage - 1);
+    }
+  };
+  
+  const nextPage = () => {
+    if (currentPage < numPages) {
+      renderPage(currentPage + 1);
+    }
+  };
+  
+  // Zoom handlers
+  const zoomIn = () => {
+    setScale(prevScale => {
+      const newScale = prevScale + 0.25;
+      renderPage(currentPage);
+      return newScale;
+    });
+  };
+  
+  const zoomOut = () => {
+    setScale(prevScale => {
+      const newScale = Math.max(0.5, prevScale - 0.25);
+      renderPage(currentPage);
+      return newScale;
+    });
+  };
+  
   return (
     <div className="container-fluid mt-3">
       <div className="card shadow">
@@ -171,32 +172,60 @@ export default function SecurePdfViewer({ syllabusFilePath }) {
           {loading ? (
             <div className="text-center py-5">
               <div className="spinner-border text-primary" role="status" />
+              <p className="mt-2">Loading PDF...</p>
             </div>
           ) : error ? (
             <div className="alert alert-danger">{error}</div>
           ) : (
-            <div
-              ref={viewerRef}
-              className="rpv-core__viewer"
-              style={{
-                height: isMobile ? '75vh' : '85vh',
-                position: 'relative',
-                overflow: 'hidden',
-                width: '100%',
-              }}
-            >
-              <Watermark />
-              <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-                <Viewer
-                  fileUrl={pdfBlob}
-                  plugins={[defaultLayoutPluginInstance]}
-                  onError={handleError}
-                  defaultScale={isMobile ? SpecialZoomLevel.PageFit : 1.5}
-                  initialPage={0}
-                  textSelectionEnabled={false}
+            <>
+              <div className="d-flex justify-content-between mb-2">
+                <div>
+                  <button 
+                    className="btn btn-sm btn-outline-primary me-2" 
+                    onClick={prevPage}
+                    disabled={currentPage <= 1}
+                  >
+                    Previous
+                  </button>
+                  <button 
+                    className="btn btn-sm btn-outline-primary" 
+                    onClick={nextPage}
+                    disabled={currentPage >= numPages}
+                  >
+                    Next
+                  </button>
+                </div>
+                <div>
+                  <span className="me-2">Page {currentPage} of {numPages}</span>
+                </div>
+                <div>
+                  <button 
+                    className="btn btn-sm btn-outline-secondary me-2" 
+                    onClick={zoomOut}
+                  >
+                    -
+                  </button>
+                  <button 
+                    className="btn btn-sm btn-outline-secondary" 
+                    onClick={zoomIn}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+              <div 
+                className="d-flex justify-content-center align-items-center bg-light"
+                style={{ 
+                  height: isMobile ? '70vh' : '80vh',
+                  overflow: 'auto'
+                }}
+              >
+                <canvas 
+                  ref={canvasRef} 
+                  style={{ maxWidth: '100%' }}
                 />
-              </Worker>
-            </div>
+              </div>
+            </>
           )}
         </div>
 
