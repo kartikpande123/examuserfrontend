@@ -267,7 +267,7 @@ export default function SecurePdfViewer({ syllabusFilePath }) {
               className="rpv-core__viewer"
             >
               <Watermark />
-              <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+              <Worker workerUrl="https://unpkg.com/pdfjs-dist@2.16.105/build/pdf.worker.min.js">
                 <Viewer
                   fileUrl={pdfUrl}
                   plugins={[defaultLayoutPluginInstance]}
