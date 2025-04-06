@@ -68,7 +68,12 @@ export default function SecurePdfViewer({ syllabusFilePath }) {
 
       try {
         const encoded = encodeURIComponent(syllabusFilePath);
-        const response = await fetch(`${API_BASE_URL}/proxy-pdf/${encoded}`);
+        const response = await fetch(`${API_BASE_URL}/proxy-pdf/${encoded}`, {
+          headers: {
+            'Accept': 'application/pdf',
+            'Cache-Control': 'no-cache'
+          }
+        });
         
         if (!response.ok) {
           throw new Error(`HTTP error: ${response.status}`);
