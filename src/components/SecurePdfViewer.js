@@ -67,12 +67,12 @@ export default function SecurePdfViewer({ syllabusFilePath }) {
           // Include additional button slots that should be removed
           ...otherSlots
         } = slots;
-        
+
         // Filter out any upload/download related buttons that might be in otherSlots
         const filteredSlots = {};
         Object.keys(otherSlots).forEach(slotKey => {
           // Skip any slots with names containing these terms
-          if (!['download', 'print', 'save', 'open', 'upload'].some(term => 
+          if (!['download', 'print', 'save', 'open', 'upload'].some(term =>
             slotKey.toLowerCase().includes(term)
           )) {
             filteredSlots[slotKey] = otherSlots[slotKey];
@@ -93,47 +93,62 @@ export default function SecurePdfViewer({ syllabusFilePath }) {
   );
 
   // In your React component's useEffect where you set the PDF URL:
-useEffect(() => {
-  const setPdfProxyUrl = async () => {
-    try {
-      setLoading(true);
+  useEffect(() => {
+    const setPdfProxyUrl = async () => {
+      try {
+        setLoading(true);
 
-      if (!syllabusFilePath) {
-        throw new Error('No syllabus path provided');
+        if (!syllabusFilePath) {
+          throw new Error('No syllabus path provided');
+        }
+
+        const encodedPath = encodeURIComponent(syllabusFilePath);
+        const proxyUrl = `${API_BASE_URL}/proxy-pdf/${encodedPath}`;
+
+        console.log('Using proxy URL for PDF:', proxyUrl);
+
+        // Use arraybuffer to get binary data exactly as sent
+        const response = await fetch(proxyUrl, {
+          method: 'GET',
+          cache: 'no-cache', // Force fresh request
+          credentials: 'include', // Include cookies if needed
+          headers: {
+            'Accept': 'application/pdf',
+          },
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Error response:', errorText);
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        // Get the data as ArrayBuffer to prevent text encoding issues
+        const arrayBuffer = await response.arrayBuffer();
+
+        // Convert to blob with explicit PDF mime type
+        const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
+
+        // Create object URL from blob
+        const blobUrl = URL.createObjectURL(blob);
+        setPdfUrl(blobUrl);
+        setLoading(false);
+      } catch (err) {
+        console.error('PDF setup error:', err);
+        setError(`Failed to load syllabus: ${err.message}`);
+        setLoading(false);
       }
+    };
 
-      const encodedPath = encodeURIComponent(syllabusFilePath);
-      const proxyUrl = `${API_BASE_URL}/proxy-pdf/${encodedPath}`;
+    setPdfProxyUrl();
 
-      console.log('Using proxy URL for PDF:', proxyUrl);
-      
-      // Optional: Test the PDF binary data before setting it
-      const response = await fetch(proxyUrl);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+    // Clean up blob URL when component unmounts
+    return () => {
+      if (pdfUrl && pdfUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(pdfUrl);
       }
-      
-      // Check content type
-      const contentType = response.headers.get('content-type');
-      console.log('Content-Type:', contentType);
-      
-      if (!contentType || !contentType.includes('application/pdf')) {
-        console.warn('Warning: Response is not a PDF:', contentType);
-      }
-      
-      setPdfUrl(proxyUrl);
-      setLoading(false);
-    } catch (err) {
-      console.error('PDF setup error:', err);
-      setError(err.message || 'Failed to load syllabus. Please try again.');
-      setLoading(false);
-    }
-  };
-
-  setPdfProxyUrl();
-  
-  // ... rest of your useEffect code
-}, [syllabusFilePath]);
+    };
+  }, [syllabusFilePath]);
 
   // Custom CSS to inject for hiding buttons
   useEffect(() => {
@@ -151,7 +166,7 @@ useEffect(() => {
     `;
     // Append to document head
     document.head.appendChild(style);
-    
+
     // Cleanup
     return () => {
       document.head.removeChild(style);
@@ -196,11 +211,11 @@ useEffect(() => {
           <span className="px-2">{isMobile ? 'Fit' : '150%'}</span>
         </div>
         <button className="btn btn-sm btn-outline-secondary">+</button>
-        
+
         {/* Page navigation */}
         <div className="d-flex align-items-center mx-3">
           <button className="btn btn-sm btn-outline-secondary me-2">&lt;</button>
-          <span>Page <input type="text" className="form-control form-control-sm" style={{width: '40px'}} /> of </span>
+          <span>Page <input type="text" className="form-control form-control-sm" style={{ width: '40px' }} /> of </span>
           <button className="btn btn-sm btn-outline-secondary ms-2">&gt;</button>
         </div>
       </div>
@@ -222,8 +237,8 @@ useEffect(() => {
           ) : error ? (
             <div className="alert alert-danger">{error}</div>
           ) : pdfUrl ? (
-            <div 
-              style={{ 
+            <div
+              style={{
                 height: isMobile ? '70vh' : '80vh',
                 position: 'relative',
                 overflow: 'hidden',
@@ -234,19 +249,31 @@ useEffect(() => {
             >
               <Watermark />
               <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-  <Viewer
-    fileUrl={pdfUrl}
-    plugins={[defaultLayoutPluginInstance]}
-    onError={(error) => {
-      console.error('PDF loading error:', error);
-      setError('Error displaying PDF. The file might be corrupted or improperly formatted.');
-    }}
-    withCredentials={true} // Try adding this to pass cookies if needed
-    defaultScale={isMobile ? SpecialZoomLevel.PageFit : 1.5}
-    initialPage={0}
-    textSelectionEnabled={false}
-  />
-</Worker>
+                <Viewer
+                  fileUrl={pdfUrl}
+                  plugins={[defaultLayoutPluginInstance]}
+                  onError={(error) => {
+                    console.error('PDF loading error:', error);
+                    setError('Error displaying PDF. Please try refreshing the page.');
+                  }}
+                  withCredentials={true}
+                  defaultScale={isMobile ? SpecialZoomLevel.PageFit : 1.5}
+                  initialPage={0}
+                  renderError={(renderError) => {
+                    console.error('PDF render error:', renderError);
+                    return (
+                      <div className="alert alert-danger">
+                        Error rendering PDF. Please try again with a different browser.
+                      </div>
+                    );
+                  }}
+                  textSelectionEnabled={false}
+                  workerParams={{
+                    isEvalSupported: true,
+                    isOffscreenCanvasSupported: true
+                  }}
+                />
+              </Worker>
             </div>
           ) : (
             <div className="alert alert-warning">No PDF available</div>
