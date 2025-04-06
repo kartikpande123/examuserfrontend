@@ -245,7 +245,7 @@ export default function SecurePdfViewer({ syllabusFilePath }) {
     <div className="container-fluid mt-2 mt-md-4">
       <div className="card shadow">
         <div className="card-header bg-dark text-white text-center">
-          <h2 className={isMobile ? "fs-4" : "fs-2"}>Syllabus Viewer</h2>
+          <h2 className={isMobile ? "fs-4" : "fs-2"}>Syllabus View</h2>
         </div>
 
         <div className="card-body p-1 p-md-3 text-center">
