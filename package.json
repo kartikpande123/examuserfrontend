@@ -9,6 +9,7 @@
     "bootstrap": "^5.3.2",
     "cra-template": "1.2.0",
     "date-fns": "^2.29.3",
+    "https-browserify": "^1.0.0",
     "install": "^0.13.0",
     "jspdf": "^2.5.2",
     "lucide-react": "^0.469.0",
@@ -24,6 +25,7 @@
     "react-router-dom": "^7.1.1",
     "react-scripts": "5.0.1",
     "react-toastify": "^11.0.5",
+    "stream-http": "^3.2.0",
     "web-vitals": "^4.2.4"
   },
   "scripts": {
