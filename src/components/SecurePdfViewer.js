@@ -92,82 +92,48 @@ export default function SecurePdfViewer({ syllabusFilePath }) {
     </Toolbar>
   );
 
-  useEffect(() => {
-    const setPdfProxyUrl = () => {
-      try {
-        setLoading(true);
+  // In your React component's useEffect where you set the PDF URL:
+useEffect(() => {
+  const setPdfProxyUrl = async () => {
+    try {
+      setLoading(true);
 
-        if (!syllabusFilePath) {
-          throw new Error('No syllabus path provided');
-        }
-
-        const encodedPath = encodeURIComponent(syllabusFilePath);
-        const proxyUrl = `${API_BASE_URL}/proxy-pdf/${encodedPath}`;
-
-        console.log('Using proxy URL for PDF');
-        setPdfUrl(proxyUrl);
-        setLoading(false);
-      } catch (err) {
-        console.error('PDF setup error:', err);
-        setError(err.message || 'Failed to load syllabus. Please try again.');
-        setLoading(false);
+      if (!syllabusFilePath) {
+        throw new Error('No syllabus path provided');
       }
-    };
 
-    setPdfProxyUrl();
+      const encodedPath = encodeURIComponent(syllabusFilePath);
+      const proxyUrl = `${API_BASE_URL}/proxy-pdf/${encodedPath}`;
 
-    // More robust context menu handler
-    const handleContextMenu = (e) => {
-      if (e && e.preventDefault) {
-        e.preventDefault();
-      }
-      return false;
-    };
-
-    // More robust keydown handler
-    const handleKeyDown = (e) => {
-      if (!e) return;
+      console.log('Using proxy URL for PDF:', proxyUrl);
       
-      // Disable Ctrl+C, Ctrl+A, Ctrl+S, Ctrl+P, etc.
-      if ((e.ctrlKey || e.metaKey) && e.preventDefault) {
-        e.preventDefault();
+      // Optional: Test the PDF binary data before setting it
+      const response = await fetch(proxyUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      // Disable F12 (dev tools), Print Screen, etc.
-      if ([112, 123, 44].includes(e.keyCode) && e.preventDefault) {
-        e.preventDefault();
+      // Check content type
+      const contentType = response.headers.get('content-type');
+      console.log('Content-Type:', contentType);
+      
+      if (!contentType || !contentType.includes('application/pdf')) {
+        console.warn('Warning: Response is not a PDF:', contentType);
       }
-    };
+      
+      setPdfUrl(proxyUrl);
+      setLoading(false);
+    } catch (err) {
+      console.error('PDF setup error:', err);
+      setError(err.message || 'Failed to load syllabus. Please try again.');
+      setLoading(false);
+    }
+  };
 
-    document.addEventListener('contextmenu', handleContextMenu);
-    document.addEventListener('keydown', handleKeyDown);
-
-    // Additional security: Remove buttons by CSS after render
-    const removeButtonsByCSS = () => {
-      setTimeout(() => {
-        // Target buttons by their common attributes
-        const downloadButtons = document.querySelectorAll('[data-testid*="download"], [aria-label*="download"], [title*="download"], [aria-label*="print"], [title*="print"], [aria-label*="save"], [title*="save"]');
-        downloadButtons.forEach(button => {
-          if (button && button.style) {
-            button.style.display = 'none';
-          }
-        });
-      }, 500);
-    };
-
-    // Call initially and whenever the component updates
-    removeButtonsByCSS();
-    
-    // Add a MutationObserver to handle dynamically added buttons
-    const observer = new MutationObserver(removeButtonsByCSS);
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    return () => {
-      document.removeEventListener('contextmenu', handleContextMenu);
-      document.removeEventListener('keydown', handleKeyDown);
-      observer.disconnect();
-    };
-  }, [syllabusFilePath]);
+  setPdfProxyUrl();
+  
+  // ... rest of your useEffect code
+}, [syllabusFilePath]);
 
   // Custom CSS to inject for hiding buttons
   useEffect(() => {
@@ -268,15 +234,19 @@ export default function SecurePdfViewer({ syllabusFilePath }) {
             >
               <Watermark />
               <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-                <Viewer
-                  fileUrl={pdfUrl}
-                  plugins={[defaultLayoutPluginInstance]}
-                  onError={handleError}
-                  defaultScale={isMobile ? SpecialZoomLevel.PageFit : 1.5} // PageFit for mobile, 150% for desktop
-                  initialPage={0}
-                  textSelectionEnabled={false}
-                />
-              </Worker>
+  <Viewer
+    fileUrl={pdfUrl}
+    plugins={[defaultLayoutPluginInstance]}
+    onError={(error) => {
+      console.error('PDF loading error:', error);
+      setError('Error displaying PDF. The file might be corrupted or improperly formatted.');
+    }}
+    withCredentials={true} // Try adding this to pass cookies if needed
+    defaultScale={isMobile ? SpecialZoomLevel.PageFit : 1.5}
+    initialPage={0}
+    textSelectionEnabled={false}
+  />
+</Worker>
             </div>
           ) : (
             <div className="alert alert-warning">No PDF available</div>
