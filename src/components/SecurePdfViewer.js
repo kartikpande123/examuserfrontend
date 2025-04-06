@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import API_BASE_URL from './ApiConifg';
+import * as pdfjsLib from 'pdfjs-dist';
 
-// PDF.js uses a global variable to find its worker
-window.pdfjsLib = window.pdfjsLib || {};
-window.pdfjsLib.GlobalWorkerOptions = window.pdfjsLib.GlobalWorkerOptions || {};
-window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+// Properly set up the PDF.js worker
+const pdfjsWorkerSrc = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerSrc;
 
 export default function SecurePdfViewer({ syllabusFilePath }) {
   const [loading, setLoading] = useState(true);
@@ -41,13 +41,10 @@ export default function SecurePdfViewer({ syllabusFilePath }) {
         const encoded = encodeURIComponent(syllabusFilePath);
         const pdfUrl = `${API_BASE_URL}/proxy-pdf/${encoded}`;
         
-        // Load the PDF.js script dynamically
-        const pdfjsLib = await import('pdfjs-dist');
-        
-        // Load document
+        // Use the already imported pdfjsLib instead of importing it again
         const loadingTask = pdfjsLib.getDocument({
           url: pdfUrl,
-          withCredentials: false
+          withCredentials: true
         });
 
         const pdf = await loadingTask.promise;
@@ -90,6 +87,8 @@ export default function SecurePdfViewer({ syllabusFilePath }) {
       
       const page = await pdf.getPage(pageNum);
       const canvas = canvasRef.current;
+      if (!canvas) return;
+      
       const context = canvas.getContext('2d');
       
       // Calculate scale based on viewport to fit the width
