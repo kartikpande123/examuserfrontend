@@ -7,7 +7,7 @@ import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 import API_BASE_URL from './ApiConifg';
 
 export default function SecurePdfViewer({ syllabusFilePath }) {
-  const [pdfUrl, setPdfUrl] = useState(null);
+  const [pdfBlob, setPdfBlob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isMobile, setIsMobile] = useState(false);
@@ -56,21 +56,43 @@ export default function SecurePdfViewer({ syllabusFilePath }) {
     </Toolbar>
   );
 
-  // Setup PDF URL
+  // Fetch PDF as blob
   useEffect(() => {
-    const loadPdf = () => {
+    const fetchPdfBlob = async () => {
       setLoading(true);
       if (!syllabusFilePath) {
         setError('No file path provided');
+        setLoading(false);
         return;
       }
 
-      const encoded = encodeURIComponent(syllabusFilePath);
-      setPdfUrl(`${API_BASE_URL}/proxy-pdf/${encoded}`);
-      setLoading(false);
+      try {
+        const encoded = encodeURIComponent(syllabusFilePath);
+        const response = await fetch(`${API_BASE_URL}/proxy-pdf/${encoded}`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error: ${response.status}`);
+        }
+        
+        const blob = await response.blob();
+        const pdfObjectUrl = URL.createObjectURL(blob);
+        setPdfBlob(pdfObjectUrl);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching PDF:', err);
+        setError('Failed to load the PDF file');
+        setLoading(false);
+      }
     };
 
-    loadPdf();
+    fetchPdfBlob();
+    
+    // Clean up object URL when component unmounts
+    return () => {
+      if (pdfBlob) {
+        URL.revokeObjectURL(pdfBlob);
+      }
+    };
   }, [syllabusFilePath]);
 
   // Disable keyboard shortcuts & right-click
@@ -161,7 +183,7 @@ export default function SecurePdfViewer({ syllabusFilePath }) {
               <Watermark />
               <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
                 <Viewer
-                  fileUrl={pdfUrl}
+                  fileUrl={pdfBlob}
                   plugins={[defaultLayoutPluginInstance]}
                   onError={handleError}
                   defaultScale={isMobile ? SpecialZoomLevel.PageFit : 1.5}
