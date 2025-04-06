@@ -226,7 +226,7 @@ export default function PdfSyllabusEntry() {
     <div style={styles.container}>
       <div className="card" style={styles.card}>
         <div style={styles.header}>
-          <h2 className="text-center mb-0">My Syllabus Portal</h2>
+          <h2 className="text-center mb-0">My Syllabus Validation</h2>
         </div>
         <div className="card-body p-4">
           <div className="mb-3">
