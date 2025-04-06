@@ -23,7 +23,6 @@ const PracticeMainExam = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [submittingResults, setSubmittingResults] = useState(false);
-  const [resultSubmissionError, setResultSubmissionError] = useState(null);
   const [showAnswerFeedback, setShowAnswerFeedback] = useState(false);
 
   useEffect(() => {
@@ -302,9 +301,8 @@ const PracticeMainExam = () => {
     }
   };
 
-  const calculateResults = async () => {
+  const calculateResults = () => {
     setSubmittingResults(true);
-    setResultSubmissionError(null);
     
     const totalQuestions = questions.length;
     let correctAnswers = 0;
@@ -333,50 +331,11 @@ const PracticeMainExam = () => {
       unansweredQuestions: totalQuestions - answeredQuestions
     });
     
-    // Submit results to API
-    try {
-      // Get exam info from localStorage that contains student details
-      const examInfoString = localStorage.getItem('practiceExamSession');
-      if (!examInfoString) {
-        throw new Error('No exam information found in localStorage');
-      }
-      
-      const examInfo = JSON.parse(examInfoString);
-      let studentId = examInfo.studentId || (examInfo.examDetails && examInfo.examDetails.studentId);
-      
-      if (!studentId) {
-        // As a fallback, try the original method
-        const studentInfoString = localStorage.getItem('studentInfo');
-        if (!studentInfoString) {
-          throw new Error('Student ID not found in localStorage');
-        }
-        const studentInfo = JSON.parse(studentInfoString);
-        studentId = studentInfo.studentId || studentInfo.id;
-      }
-      
-      // Prepare exam details for submission
-      const submissionData = {
-        studentId,
-        examDetails: {
-          title: examDetails.title,
-          category: examDetails.category
-        },
-        purchaseDate: examDetails.purchaseDate || new Date().toISOString(),
-        correctAnswers,
-        wrongAnswers: incorrectAnswers
-      };
-      
-      // Submit to API
-      await axios.post(`${API_BASE_URL}/submit-exam-result`, submissionData);
-      
-      console.log('Exam results submitted successfully');
-    } catch (err) {
-      console.error('Error submitting exam results:', err);
-      setResultSubmissionError(err.message || 'Failed to save exam results');
-    } finally {
+    // Simulate a brief loading period for visual feedback
+    setTimeout(() => {
       setSubmittingResults(false);
       setShowResultModal(true);
-    }
+    }, 800);
   };
 
   const handleStartAgain = () => {
@@ -386,7 +345,6 @@ const PracticeMainExam = () => {
     setShowResultModal(false);
     setExamResult(null);
     setTimeExpired(false);
-    setResultSubmissionError(null);
     setShowAnswerFeedback(false);
     
     // Reset the timer if there was a time limit
@@ -566,7 +524,7 @@ const PracticeMainExam = () => {
                     {submittingResults ? (
                       <>
                         <Spinner animation="border" size="sm" className="me-2" />
-                        Submitting...
+                        Calculating...
                       </>
                     ) : (
                       'Finish'
@@ -624,7 +582,7 @@ const PracticeMainExam = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '2.5rem',
+                fontSize: '1.7rem',
                 fontWeight: 'bold',
                 color: 'white',
                 background: `conic-gradient(
@@ -673,17 +631,10 @@ const PracticeMainExam = () => {
                 <p className="mb-1"><strong>Total Questions:</strong> {examResult.totalQuestions}</p>
                 <p className="mb-1"><strong>Time Used:</strong> {examDetails.timeLimit && examDetails.timeLimit !== 'N/A' ? formatTime(timeExpired ? 0 : timeRemaining) : 'N/A'}</p>
                 
-                {resultSubmissionError ? (
-                  <div className="alert alert-danger mt-3">
-                    <i className="fas fa-exclamation-circle me-2"></i>
-                    Error saving results: {resultSubmissionError}
-                  </div>
-                ) : (
-                  <div className="alert alert-success mt-3">
-                    <i className="fas fa-check-circle me-2"></i>
-                    Results saved successfully!
-                  </div>
-                )}
+                <div className="alert alert-success mt-3">
+                  <i className="fas fa-check-circle me-2"></i>
+                  Practice exam completed!
+                </div>
                 
                 {examResult.unansweredQuestions > 0 && (
                   <div className="alert alert-warning mt-3">

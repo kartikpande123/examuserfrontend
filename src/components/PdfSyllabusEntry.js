@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import API_BASE_URL from './ApiConifg';
 import SecurePdfViewer from './SecurePdfViewer';
+import API_BASE_URL from './ApiConifg';
 
 export default function PdfSyllabusEntry() {
   const [studentId, setStudentId] = useState('');
@@ -12,54 +12,55 @@ export default function PdfSyllabusEntry() {
   const [selectedSyllabus, setSelectedSyllabus] = useState(null);
   const [viewerOpen, setViewerOpen] = useState(false);
   
-  // Design-focused styles
-  const styles = {
-    container: {
-      backgroundColor: '#f4f6f9',
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '20px'
-    },
-    card: {
-      maxWidth: '700px',
-      width: '100%',
-      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-      borderRadius: '12px',
-      border: 'none'
-    },
-    header: {
-      backgroundColor: '#2c3e50',
-      color: 'white',
-      padding: '20px',
-      borderTopLeftRadius: '12px',
-      borderTopRightRadius: '12px'
-    },
-    input: {
-      borderRadius: '25px',
-      padding: '10px 20px'
-    },
-    button: {
-      borderRadius: '25px',
-      padding: '10px 20px',
-      fontWeight: 'bold'
-    },
-    syllabusCard: {
-      border: '1px solid #e0e0e0',
-      borderRadius: '10px',
-      padding: '15px',
-      marginBottom: '15px',
-      transition: 'all 0.2s ease'
-    },
-    badge: {
-      borderRadius: '12px',
-      padding: '5px 10px',
-      fontSize: '0.8rem',
-      fontWeight: 'bold'
-    }
-  };
+ // Design-focused styles
+ const styles = {
+  container: {
+    backgroundColor: '#f4f6f9',
+    minHeight: '100vh',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '20px'
+  },
+  card: {
+    maxWidth: '700px',
+    width: '100%',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    borderRadius: '12px',
+    border: 'none'
+  },
+  header: {
+    backgroundColor: '#2c3e50',
+    color: 'white',
+    padding: '20px',
+    borderTopLeftRadius: '12px',
+    borderTopRightRadius: '12px'
+  },
+  input: {
+    borderRadius: '25px',
+    padding: '10px 20px'
+  },
+  button: {
+    borderRadius: '25px',
+    padding: '10px 20px',
+    fontWeight: 'bold'
+  },
+  syllabusCard: {
+    border: '1px solid #e0e0e0',
+    borderRadius: '10px',
+    padding: '15px',
+    marginBottom: '15px',
+    transition: 'all 0.2s ease'
+  },
+  badge: {
+    borderRadius: '12px',
+    padding: '5px 10px',
+    fontSize: '0.8rem',
+    fontWeight: 'bold'
+  }
+};
 
+  // Fetch student data and process syllabuses
   const verifyStudent = async () => {
     if (!studentId.trim()) {
       setError('Please enter a Student ID');
@@ -70,39 +71,75 @@ export default function PdfSyllabusEntry() {
     setError('');
     
     try {
-      const response = await fetch(`${API_BASE_URL}/verify-student-syllabus/${studentId}`);
-      
-      // Check for content type before parsing as JSON
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Server response is not valid JSON. Please contact support.');
-      }
-      
-      const data = await response.json();
+      // Call the API to get students data
+      const response = await fetch(`${API_BASE_URL}/api/pdfsyllabuspurchasers`);
       
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to verify student');
+        throw new Error('Failed to fetch student data');
       }
       
-      if (!data.exists) {
+      const responseData = await response.json();
+      
+      if (!responseData.success || !responseData.data) {
+        throw new Error('Invalid response format');
+      }
+      
+      const students = responseData.data;
+      
+      // Find the specific student by ID
+      if (!students[studentId]) {
         setError('Student not found');
         setStudentDetails(null);
         setActiveSyllabuses([]);
         return;
       }
       
-      setStudentDetails(data.studentDetails);
-      setActiveSyllabuses(data.studentDetails.activeSyllabuses);
+      const student = students[studentId];
       
-      if (data.studentDetails.activeSyllabuses.length === 0) {
+      // Process student's purchases to create active syllabuses
+      const currentDate = new Date();
+      const active = [];
+      
+      if (student.purchases) {
+        Object.values(student.purchases).forEach(purchase => {
+          const expirationDate = new Date(purchase.expirationDate);
+          
+          // Only include purchases that have not expired
+          if (expirationDate > currentDate) {
+            // Calculate remaining days
+            const remainingDays = calculateRemainingDays(purchase.expirationDate);
+            
+            // Format purchase data for display
+            active.push({
+              syllabusTitle: purchase.syllabusTitle,
+              syllabusCategory: purchase.syllabusCategory,
+              purchaseDate: purchase.purchaseDate,
+              expirationDate: purchase.expirationDate,
+              remainingDays: remainingDays,
+              syllabusFilePath: purchase.syllabusFilePath
+            });
+          }
+        });
+      }
+      
+      // Set student details and active syllabuses
+      setStudentDetails({
+        name: student.name,
+        email: student.email,
+        phoneNo: student.phoneNo,
+        age: student.age,
+        gender: student.gender,
+        state: student.state,
+        district: student.district
+      });
+      
+      setActiveSyllabuses(active);
+      
+      if (active.length === 0) {
         setError('No active syllabus purchases found');
       }
     } catch (err) {
-      if (err.message === 'Unexpected token < in JSON at position 0') {
-        setError('Invalid server response. The API may be offline or returning HTML instead of JSON.');
-      } else {
-        setError(err.message || 'An error occurred. Please try again.');
-      }
+      setError(err.message || 'An error occurred. Please try again.');
       console.error(err);
       setStudentDetails(null);
       setActiveSyllabuses([]);
@@ -121,7 +158,7 @@ export default function PdfSyllabusEntry() {
     setSelectedSyllabus(null);
   };
 
-  // Simple date formatter without using date-fns
+  // Format date as Month Day, Year
   const formatDate = (dateString) => {
     try {
       const date = new Date(dateString);
@@ -144,7 +181,7 @@ export default function PdfSyllabusEntry() {
     }
   };
   
-  // Calculate remaining days without date-fns
+  // Calculate remaining days between now and expiration date
   const calculateRemainingDays = (expirationDateString) => {
     try {
       const expirationDate = new Date(expirationDateString);
@@ -189,7 +226,7 @@ export default function PdfSyllabusEntry() {
     <div style={styles.container}>
       <div className="card" style={styles.card}>
         <div style={styles.header}>
-          <h2 className="text-center mb-0">My Syllabus Valuation</h2>
+          <h2 className="text-center mb-0">My Syllabus Portal</h2>
         </div>
         <div className="card-body p-4">
           <div className="mb-3">
@@ -226,7 +263,7 @@ export default function PdfSyllabusEntry() {
                 Verifying...
               </span>
             ) : (
-              'Verify & Find Syllabus'
+              'Verify & Find My Syllabuses'
             )}
           </button>
 
@@ -234,6 +271,7 @@ export default function PdfSyllabusEntry() {
           {studentDetails && (
             <div className="mt-4 alert alert-success">
               <h5 className="mb-0">Welcome, {studentDetails.name}</h5>
+              {studentDetails.email && <p className="mb-0 small mt-1">Email: {studentDetails.email}</p>}
             </div>
           )}
 
@@ -241,47 +279,46 @@ export default function PdfSyllabusEntry() {
           {activeSyllabuses.length > 0 && (
             <div className="mt-4">
               <h4>Your Active Syllabuses</h4>
-              {activeSyllabuses.map((syllabus, index) => {
-                // Calculate remaining days if not already provided
-                const remainingDays = syllabus.remainingDays !== undefined ? 
-                  syllabus.remainingDays : 
-                  calculateRemainingDays(syllabus.expirationDate);
-                  
-                return (
-                  <div 
-                    key={index} 
-                    style={styles.syllabusCard} 
-                    className="d-flex flex-column flex-md-row justify-content-between align-items-md-center"
-                  >
-                    <div className="flex-grow-1">
-                      <div className="d-flex justify-content-between align-items-center mb-2">
-                        <h5 className="mb-0">{syllabus.syllabusTitle}</h5>
-                        <span 
-                          className="badge bg-success" 
-                          style={styles.badge}
-                        >
-                          {remainingDays} {remainingDays === 1 ? 'day' : 'days'} remaining
-                        </span>
-                      </div>
-                      <p className="mb-1">
-                        <strong>Category:</strong> {syllabus.syllabusCategory}
-                      </p>
-                      <p className="mb-1">
-                        <strong>Purchase Date:</strong> {formatDate(syllabus.purchaseDate)}
-                      </p>
-                      <p className="mb-0">
-                        <strong>Expires On:</strong> {formatDate(syllabus.expirationDate)}
-                      </p>
+              {activeSyllabuses.map((syllabus, index) => (
+                <div 
+                  key={index} 
+                  style={styles.syllabusCard} 
+                  className="d-flex flex-column flex-md-row justify-content-between align-items-md-center"
+                >
+                  <div className="flex-grow-1">
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <h5 className="mb-0">{syllabus.syllabusTitle}</h5>
+                      <span 
+                        className={`badge ${syllabus.remainingDays <= 1 ? 'bg-danger' : syllabus.remainingDays <= 3 ? 'bg-warning' : 'bg-success'}`} 
+                        style={styles.badge}
+                      >
+                        {syllabus.remainingDays} {syllabus.remainingDays === 1 ? 'day' : 'days'} remaining
+                      </span>
                     </div>
-                    <button 
-                      className="btn btn-primary mt-3 mt-md-0"
-                      onClick={() => handleOpenSyllabus(syllabus)}
-                    >
-                      View Securely
-                    </button>
+                    <p className="mb-1">
+                      <strong>Category:</strong> {syllabus.syllabusCategory}
+                    </p>
+                    <p className="mb-1">
+                      <strong>Purchase Date:</strong> {formatDate(syllabus.purchaseDate)}
+                    </p>
+                    <p className="mb-0">
+                      <strong>Expires On:</strong> {formatDate(syllabus.expirationDate)}
+                    </p>
                   </div>
-                );
-              })}
+                  <button 
+                    className="btn btn-primary mt-3 mt-md-0"
+                    onClick={() => handleOpenSyllabus(syllabus)}
+                  >
+                    View Securely
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {studentDetails && activeSyllabuses.length === 0 && (
+            <div className="mt-4 alert alert-warning">
+              <p className="mb-0">You don't have any active syllabuses. All your purchased syllabuses have expired or you haven't purchased any yet.</p>
             </div>
           )}
         </div>
