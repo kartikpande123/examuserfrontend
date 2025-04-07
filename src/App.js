@@ -28,6 +28,7 @@ import PdfSyllabusDashboard from './components/PdfSyllabusDashboard.js';
 import PdfSyllabusRegistration from './components/PdfSyllabusRegistration.js';
 import PdfSyllabusEntry from './components/PdfSyllabusEntry.js';
 import SecurePdfViewer from './components/SecurePdfViewer.js';
+import TestPdf from './components/TestPdf.js';
 
 function App() {
   return (
@@ -61,6 +62,7 @@ function App() {
           <Route path="pdfsyllabusreg" element={<PdfSyllabusRegistration />} />
           <Route path="pdfsyllabusentry" element={<PdfSyllabusEntry />} />
           <Route path="pdfsyllabusview" element={<SecurePdfViewer />} />
+          <Route path="testpdf" element={<TestPdf />} />
         </Routes>
       </div>
     </Router>
