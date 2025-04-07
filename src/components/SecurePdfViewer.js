@@ -54,7 +54,7 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
     },
   });
 
-  // Completely remove all unwanted buttons from toolbar (more comprehensive approach)
+  // Completely remove all unwanted buttons from toolbar
   const { renderDefaultToolbar } = defaultLayoutPluginInstance.toolbarPluginInstance;
   defaultLayoutPluginInstance.toolbarPluginInstance.renderToolbar = (Toolbar) => (
     <Toolbar>
@@ -105,19 +105,34 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
         // Encode the file path for use in URL
         const encodedPath = encodeURIComponent(syllabusFilePath);
         
-        // First, get the file name and metadata from the API
-        const metadataResponse = await fetch(`${API_BASE_URL}/get-syllabus-url/${encodedPath}`);
+        // First, try to get the file metadata
+        let fileName = 'syllabus.pdf'; // Default filename
         
-        if (!metadataResponse.ok) {
-          const errorData = await metadataResponse.json();
-          throw new Error(errorData.message || 'Failed to get syllabus information');
+        try {
+          // Fetch metadata separately with robust error handling
+          const metadataResponse = await fetch(`${API_BASE_URL}/get-syllabus-url/${encodedPath}`);
+          
+          if (metadataResponse.ok) {
+            // Check if the response is JSON
+            const contentType = metadataResponse.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              const metadata = await metadataResponse.json();
+              if (metadata.fileName) {
+                fileName = metadata.fileName;
+                setFileName(fileName);
+              }
+            } else {
+              console.warn('Metadata response was not JSON:', contentType);
+            }
+          } else {
+            console.warn('Failed to get metadata, using default filename');
+          }
+        } catch (metadataError) {
+          console.warn('Error fetching metadata:', metadataError);
+          // Continue with default filename
         }
-
-        const metadata = await metadataResponse.json();
-        setFileName(metadata.fileName || 'syllabus.pdf');
         
-        // Now, fetch the actual PDF content through our proxy endpoint
-        // Create a proxy endpoint that will stream the PDF content
+        // Direct approach - fetch the PDF content directly with proper error handling
         const pdfResponse = await fetch(`${API_BASE_URL}/proxy-pdf-content/${encodedPath}`, {
           method: 'GET',
           headers: {
@@ -125,12 +140,33 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
           },
         });
         
+        // Check for HTTP errors
         if (!pdfResponse.ok) {
-          throw new Error('Failed to retrieve PDF content');
+          // Try to parse error response
+          const contentType = pdfResponse.headers.get('content-type');
+          
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await pdfResponse.json();
+            throw new Error(errorData.message || `Server error: ${pdfResponse.status}`);
+          } else {
+            throw new Error(`Failed to retrieve PDF content: ${pdfResponse.status} ${pdfResponse.statusText}`);
+          }
+        }
+        
+        // Check that we actually got a PDF
+        const contentType = pdfResponse.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/pdf')) {
+          console.warn('Invalid content type received:', contentType);
+          // Try to handle the response anyway
         }
         
         // Convert the response to a blob
         const pdfBlob = await pdfResponse.blob();
+        
+        // Verify we have actual content
+        if (pdfBlob.size === 0) {
+          throw new Error('Received empty PDF content');
+        }
         
         // Create a blob URL from the blob
         const pdfBlobUrl = URL.createObjectURL(pdfBlob);
@@ -233,6 +269,42 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
     setError('Error displaying PDF. Please try again later.');
   };
 
+  // More informative fallback component
+  const renderFallback = () => {
+    if (loading) {
+      return (
+        <div className="d-flex flex-column align-items-center justify-content-center p-5">
+          <div className="spinner-border text-primary mb-3" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <div>Loading syllabus...</div>
+        </div>
+      );
+    } 
+    
+    if (error) {
+      return (
+        <div className="alert alert-danger">
+          <h4>Unable to load syllabus</h4>
+          <p>{error}</p>
+          <button 
+            className="btn btn-primary mt-2" 
+            onClick={() => window.location.reload()}
+          >
+            Try Again
+          </button>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="alert alert-warning">
+        <h4>No PDF Available</h4>
+        <p>The requested syllabus could not be found.</p>
+      </div>
+    );
+  };
+
   // Custom watermark component
   const Watermark = () => {
     // Include student name in watermark if available
@@ -271,13 +343,9 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
         </div>
 
         <div className="card-body p-1 p-md-3 text-center">
-          {loading ? (
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Loading...</span>
-            </div>
-          ) : error ? (
-            <div className="alert alert-danger">{error}</div>
-          ) : pdfData ? (
+          {loading || error || !pdfData ? (
+            renderFallback()
+          ) : (
             <div 
               style={{ 
                 height: isMobile ? '70vh' : '80vh',
@@ -300,8 +368,6 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
                 />
               </Worker>
             </div>
-          ) : (
-            <div className="alert alert-warning">No PDF available</div>
           )}
         </div>
 
