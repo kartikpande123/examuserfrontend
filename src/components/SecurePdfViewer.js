@@ -14,8 +14,9 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
   const [error, setError] = useState('');
   const [isMobile, setIsMobile] = useState(false);
   const [fileName, setFileName] = useState('');
-  const viewerRef = useRef(null);
   const [debugInfo, setDebugInfo] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const viewerRef = useRef(null);
 
   // Check if the device is mobile
   useEffect(() => {
@@ -23,19 +24,15 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
       setIsMobile(window.innerWidth < 768);
     };
 
-    // Initial check
     checkIfMobile();
-
-    // Listen for window resize events
     window.addEventListener('resize', checkIfMobile);
-
-    // Cleanup
+    
     return () => {
       window.removeEventListener('resize', checkIfMobile);
     };
   }, []);
 
-  // PDF Viewer Plugin with completely disabled download, print, and related options
+  // PDF Viewer Plugin
   const defaultLayoutPluginInstance = defaultLayoutPlugin({
     toolbarPlugin: {
       fullScreenPlugin: {
@@ -54,7 +51,7 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
     },
   });
 
-  // Completely remove all unwanted buttons from toolbar
+  // Remove unwanted buttons from toolbar
   const { renderDefaultToolbar } = defaultLayoutPluginInstance.toolbarPluginInstance;
   defaultLayoutPluginInstance.toolbarPluginInstance.renderToolbar = (Toolbar) => (
     <Toolbar>
@@ -88,139 +85,171 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
     </Toolbar>
   );
 
-  // Helper function to check if the blob is a valid PDF
-  const isPdfValid = async (blob) => {
+  const fetchPdfContent = async (tryDirectFetch = false) => {
     try {
-      // Check if the blob has content
-      if (!blob || blob.size === 0) {
-        setDebugInfo('Blob is empty or null');
-        return false;
-      }
-      
-      // Attempt to read the first few bytes to check for PDF signature
-      const arrayBuffer = await blob.slice(0, 5).arrayBuffer();
-      const bytes = new Uint8Array(arrayBuffer);
-      const header = String.fromCharCode(...bytes);
-      
-      // PDF files start with %PDF-
-      if (header !== '%PDF-') {
-        setDebugInfo(`Invalid PDF header: ${JSON.stringify(Array.from(bytes))}`);
-        return false;
-      }
-      
-      return true;
-    } catch (err) {
-      console.error('Error validating PDF:', err);
-      setDebugInfo(`Validation error: ${err.message}`);
-      return false;
-    }
-  };
+      setLoading(true);
+      setError('');
+      setPdfData(null);
+      setDebugInfo(null);
 
-  useEffect(() => {
-    const fetchPdfContent = async () => {
+      if (!syllabusFilePath) {
+        throw new Error('No syllabus path provided');
+      }
+
+      // Encode the file path for URL
+      const encodedPath = encodeURIComponent(syllabusFilePath);
+      
+      // Try to get metadata first
+      let fileName = 'syllabus.pdf'; // Default name
+      
       try {
-        setLoading(true);
-        setError('');
-        setPdfData(null);
-        setDebugInfo(null);
-
-        if (!syllabusFilePath) {
-          throw new Error('No syllabus path provided');
-        }
-
-        // Encode the file path for use in URL
-        const encodedPath = encodeURIComponent(syllabusFilePath);
+        const metadataUrl = `${API_BASE_URL}/get-syllabus-url/${encodedPath}`;
+        console.log('Fetching metadata from:', metadataUrl);
         
-        // Default filename
-        let fileName = 'syllabus.pdf';
+        const metadataResponse = await fetch(metadataUrl, {
+          headers: {
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache'
+          }
+        });
         
-        try {
-          const metadataResponse = await fetch(`${API_BASE_URL}/get-syllabus-url/${encodedPath}`);
-          
-          if (metadataResponse.ok) {
-            const contentType = metadataResponse.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-              const metadata = await metadataResponse.json();
-              if (metadata.fileName) {
-                fileName = metadata.fileName;
-                setFileName(fileName);
+        if (metadataResponse.ok) {
+          const contentType = metadataResponse.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const metadata = await metadataResponse.json();
+            if (metadata.fileName) {
+              fileName = metadata.fileName;
+              setFileName(fileName);
+            }
+            
+            // If there's a direct URL in the metadata, try using that
+            if (metadata.url && !tryDirectFetch) {
+              console.log('Using direct URL from metadata:', metadata.url);
+              const directResponse = await fetch(metadata.url, {
+                method: 'GET',
+                headers: {
+                  'Accept': 'application/pdf',
+                  'Cache-Control': 'no-cache'
+                }
+              });
+              
+              if (directResponse.ok) {
+                const contentType = directResponse.headers.get('content-type');
+                if (contentType && contentType.includes('application/pdf')) {
+                  const pdfBlob = await directResponse.blob();
+                  if (pdfBlob.size > 0) {
+                    const pdfBlobUrl = URL.createObjectURL(pdfBlob);
+                    setPdfData(pdfBlobUrl);
+                    setLoading(false);
+                    return;
+                  }
+                }
               }
             }
           }
-        } catch (metadataError) {
-          console.warn('Error fetching metadata:', metadataError);
         }
-        
-        // Try direct PDF fetch with timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-        
-        try {
-          const pdfResponse = await fetch(`${API_BASE_URL}/proxy-pdf-content/${encodedPath}`, {
-            method: 'GET',
-            headers: {
-              'Accept': 'application/pdf',
-              'Cache-Control': 'no-cache'
-            },
-            signal: controller.signal
-          });
-          
-          clearTimeout(timeoutId);
-          
-          if (!pdfResponse.ok) {
-            const contentType = pdfResponse.headers.get('content-type');
-            setDebugInfo(`Response not OK: ${pdfResponse.status}, Content-Type: ${contentType}`);
-            
-            if (contentType && contentType.includes('application/json')) {
-              const errorData = await pdfResponse.json();
-              throw new Error(errorData.message || `Server error: ${pdfResponse.status}`);
-            } else {
-              throw new Error(`Failed to retrieve PDF: ${pdfResponse.status} ${pdfResponse.statusText}`);
-            }
-          }
-          
-          // Get content type and log it for debugging
-          const contentType = pdfResponse.headers.get('content-type');
-          setDebugInfo(`Content-Type: ${contentType}`);
-          
-          // Get the response as a blob
-          const pdfBlob = await pdfResponse.blob();
-          
-          // Log blob size for debugging
-          setDebugInfo(prev => `${prev || ''}, Blob size: ${pdfBlob.size} bytes`);
-          
-          // Validate the PDF structure
-          const isValid = await isPdfValid(pdfBlob);
-          if (!isValid) {
-            throw new Error('Invalid PDF structure. The file may be corrupted or not a PDF.');
-          }
-          
-          // Create a blob URL from the validated blob
-          const pdfBlobUrl = URL.createObjectURL(pdfBlob);
-          
-          // Set the blob URL as our PDF data source
-          setPdfData(pdfBlobUrl);
-        } catch (fetchError) {
-          clearTimeout(timeoutId);
-          
-          if (fetchError.name === 'AbortError') {
-            throw new Error('Request timed out. Please try again.');
-          }
-          
-          throw fetchError;
-        }
-        
-        setLoading(false);
-      } catch (err) {
-        console.error('PDF fetching error:', err);
-        setError(err.message || 'Failed to load syllabus. Please try again.');
-        setLoading(false);
+      } catch (metadataError) {
+        console.warn('Error fetching metadata:', metadataError);
       }
-    };
+      
+      // If we get here, try the proxy endpoint with bypass parameter
+      const bypassCache = new Date().getTime(); // Cache buster
+      const pdfUrl = `${API_BASE_URL}/proxy-pdf-content/${encodedPath}?bypass=${bypassCache}`;
+      console.log('Fetching PDF from:', pdfUrl);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
+      try {
+        const pdfResponse = await fetch(pdfUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/pdf',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
+          },
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        const contentType = pdfResponse.headers.get('content-type');
+        console.log('Response content type:', contentType);
+        
+        // Check if we got an error response
+        if (!pdfResponse.ok) {
+          setDebugInfo(`Response not OK: ${pdfResponse.status}, Content-Type: ${contentType}`);
+          
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await pdfResponse.json();
+            throw new Error(errorData.message || `Server error: ${pdfResponse.status}`);
+          } else {
+            throw new Error(`Server error: ${pdfResponse.status} ${pdfResponse.statusText}`);
+          }
+        }
+        
+        // Check if we got a PDF
+        if (!contentType || !contentType.includes('application/pdf')) {
+          // We might have received HTML or another format instead of PDF
+          setDebugInfo(`Unexpected content type: ${contentType}`);
+          
+          // Try to detect HTML
+          const text = await pdfResponse.text();
+          if (text.includes('<!DOCTYPE html>') || text.includes('<html') || text.startsWith('<!doc')) {
+            setDebugInfo(`Received HTML instead of PDF: ${text.substring(0, 100)}...`);
+            throw new Error('Server returned HTML instead of PDF. The server might be experiencing issues.');
+          } else {
+            throw new Error(`Invalid response content type: ${contentType || 'unknown'}`);
+          }
+        }
+        
+        // Get the response as a blob
+        const pdfBlob = await pdfResponse.blob();
+        console.log(`Received blob of size: ${pdfBlob.size} bytes`);
+        
+        // Validate blob size
+        if (pdfBlob.size === 0) {
+          throw new Error('Received empty PDF content');
+        }
+        
+        // Check PDF header
+        const arrayBuffer = await pdfBlob.slice(0, 5).arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        const header = String.fromCharCode(...bytes);
+        
+        if (header !== '%PDF-') {
+          const bytesArray = Array.from(bytes);
+          setDebugInfo(`Invalid PDF header: [${bytesArray.join(',')}]`);
+          throw new Error('Invalid PDF structure. The file may be corrupted or not a PDF.');
+        }
+        
+        // Create a blob URL from the validated blob
+        const pdfBlobUrl = URL.createObjectURL(pdfBlob);
+        setPdfData(pdfBlobUrl);
+        
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Request timed out. Please try again.');
+        }
+        
+        throw fetchError;
+      }
+      
+      setLoading(false);
+    } catch (err) {
+      console.error('PDF fetching error:', err);
+      setError(err.message || 'Failed to load syllabus. Please try again.');
+      setLoading(false);
+    }
+  };
 
+  // Initial fetch on component mount
+  useEffect(() => {
     fetchPdfContent();
-
-    // Security event handlers and CSS
+    
+    // Security event handlers
     const handleContextMenu = (e) => {
       if (e && e.preventDefault) {
         e.preventDefault();
@@ -243,6 +272,7 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
     document.addEventListener('contextmenu', handleContextMenu);
     document.addEventListener('keydown', handleKeyDown);
 
+    // Hide download buttons
     const removeButtonsByCSS = () => {
       setTimeout(() => {
         const downloadButtons = document.querySelectorAll('[data-testid*="download"], [aria-label*="download"], [title*="download"], [aria-label*="print"], [title*="print"], [aria-label*="save"], [title*="save"]');
@@ -268,9 +298,9 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
         URL.revokeObjectURL(pdfData);
       }
     };
-  }, [syllabusFilePath]);
+  }, [syllabusFilePath, retryCount]);
 
-  // Custom CSS to inject for hiding buttons
+  // Custom CSS to hide buttons
   useEffect(() => {
     const style = document.createElement('style');
     style.textContent = `
@@ -294,7 +324,14 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
     setError(`Error displaying PDF: ${error.message || 'Unknown error'}`);
   };
 
-  // More informative fallback component
+  // Handle retry with different approach
+  const handleRetry = () => {
+    setRetryCount(count => count + 1);
+    // Try direct fetch if we already tried proxy
+    fetchPdfContent(retryCount > 0);
+  };
+
+  // Fallback component
   const renderFallback = () => {
     if (loading) {
       return (
@@ -318,11 +355,21 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
             </div>
           )}
           <button 
-            className="btn btn-primary mt-2" 
-            onClick={() => window.location.reload()}
+            className="btn btn-primary mt-3" 
+            onClick={handleRetry}
           >
-            Try Again
+            {retryCount > 0 ? "Try Alternative Method" : "Try Again"}
           </button>
+          <div className="mt-3">
+            <a 
+              href={`${API_BASE_URL}/direct-download/${encodeURIComponent(syllabusFilePath)}`} 
+              className="btn btn-outline-secondary"
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
+              Open in New Tab
+            </a>
+          </div>
         </div>
       );
     }
@@ -362,7 +409,7 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
     );
   };
 
-  // Try a different approach to render the PDF if we have data
+  // PDF viewer component
   const renderPdfViewer = () => {
     if (!pdfData) return null;
     
