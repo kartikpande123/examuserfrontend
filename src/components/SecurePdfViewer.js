@@ -93,7 +93,7 @@ export default function SecurePdfViewer({ syllabusFilePath }) {
   );
 
   useEffect(() => {
-    const setPdfProxyUrl = () => {
+    const fetchPdf = async () => {
       try {
         setLoading(true);
 
@@ -101,11 +101,24 @@ export default function SecurePdfViewer({ syllabusFilePath }) {
           throw new Error('No syllabus path provided');
         }
 
+        // OPTION 1: Use the direct proxy endpoint
+        // This directly streams the PDF through our server
         const encodedPath = encodeURIComponent(syllabusFilePath);
         const proxyUrl = `${API_BASE_URL}/proxy-pdf/${encodedPath}`;
-
-        console.log('Using proxy URL for PDF');
         setPdfUrl(proxyUrl);
+
+        // OPTION 2: Get a signed URL first (uncomment this if you prefer this approach)
+        // const encodedPath = encodeURIComponent(syllabusFilePath);
+        // const response = await fetch(`${API_BASE_URL}/get-syllabus-url/${encodedPath}`);
+        // 
+        // if (!response.ok) {
+        //   const errorData = await response.json();
+        //   throw new Error(errorData.message || 'Failed to get syllabus URL');
+        // }
+        // 
+        // const data = await response.json();
+        // setPdfUrl(data.signedUrl);
+
         setLoading(false);
       } catch (err) {
         console.error('PDF setup error:', err);
@@ -114,7 +127,7 @@ export default function SecurePdfViewer({ syllabusFilePath }) {
       }
     };
 
-    setPdfProxyUrl();
+    fetchPdf();
 
     // More robust context menu handler
     const handleContextMenu = (e) => {
@@ -195,6 +208,33 @@ export default function SecurePdfViewer({ syllabusFilePath }) {
   const handleError = (error) => {
     console.error('PDF viewer error:', error);
     setError('Error displaying PDF. Please try again later.');
+    
+    // Optional: If there's an error, try the alternative method
+    if (pdfUrl && pdfUrl.includes('/proxy-pdf/')) {
+      // If we were using the proxy, try the signed URL instead
+      const fetchSignedUrl = async () => {
+        try {
+          setLoading(true);
+          const encodedPath = encodeURIComponent(syllabusFilePath);
+          const response = await fetch(`${API_BASE_URL}/get-syllabus-url/${encodedPath}`);
+          
+          if (!response.ok) {
+            throw new Error('Failed to get alternative PDF URL');
+          }
+          
+          const data = await response.json();
+          setPdfUrl(data.signedUrl);
+          setError('');
+          setLoading(false);
+        } catch (retryErr) {
+          console.error('Failed to load PDF using alternative method:', retryErr);
+          setError('PDF could not be loaded. Please try again later.');
+          setLoading(false);
+        }
+      };
+      
+      fetchSignedUrl();
+    }
   };
 
   // Custom watermark component
