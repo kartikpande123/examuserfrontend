@@ -101,10 +101,16 @@ export default function SecurePdfViewer({ syllabusFilePath }) {
           throw new Error('No syllabus path provided');
         }
 
-        // Use the direct proxy endpoint only
+        // Use the get-syllabus-url endpoint instead of proxy-pdf
         const encodedPath = encodeURIComponent(syllabusFilePath);
-        const proxyUrl = `${API_BASE_URL}/proxy-pdf/${encodedPath}`;
-        setPdfUrl(proxyUrl);
+        const response = await fetch(`${API_BASE_URL}/get-syllabus-url/${encodedPath}`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch PDF: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        setPdfUrl(data.signedUrl);
         
         setLoading(false);
       } catch (err) {
