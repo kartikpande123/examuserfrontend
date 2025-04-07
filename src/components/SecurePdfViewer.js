@@ -15,6 +15,7 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
   const [isMobile, setIsMobile] = useState(false);
   const [fileName, setFileName] = useState('');
   const viewerRef = useRef(null);
+  const [debugInfo, setDebugInfo] = useState(null);
 
   // Check if the device is mobile
   useEffect(() => {
@@ -39,14 +40,13 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
     toolbarPlugin: {
       fullScreenPlugin: {
         onEnterFullScreen: (zoom) => {
-          zoom(isMobile ? 1 : 1.5); // Adjust zoom based on device type
+          zoom(isMobile ? 1 : 1.5);
         },
         onExitFullScreen: (zoom) => {
-          zoom(isMobile ? 1 : 1.5); // Maintain appropriate zoom when exiting full screen
+          zoom(isMobile ? 1 : 1.5);
         },
       },
     },
-    // Disable all plugins that might allow downloading or printing
     sidebarPlugin: {
       thumbnailPlugin: {
         enableDragAndDrop: false,
@@ -65,14 +65,11 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
           Open,
           Save,
           SwitchTheme,
-          // Include additional button slots that should be removed
           ...otherSlots
         } = slots;
         
-        // Filter out any upload/download related buttons that might be in otherSlots
         const filteredSlots = {};
         Object.keys(otherSlots).forEach(slotKey => {
-          // Skip any slots with names containing these terms
           if (!['download', 'print', 'save', 'open', 'upload'].some(term => 
             slotKey.toLowerCase().includes(term)
           )) {
@@ -82,21 +79,50 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
 
         return renderDefaultToolbar({
           ...filteredSlots,
-          // Explicitly empty these slots
           Download: () => <></>,
           Print: () => <></>,
           Open: () => <></>,
           Save: () => <></>,
-          // Any other slots we want to remove but weren't caught above
         });
       }}
     </Toolbar>
   );
 
+  // Helper function to check if the blob is a valid PDF
+  const isPdfValid = async (blob) => {
+    try {
+      // Check if the blob has content
+      if (!blob || blob.size === 0) {
+        setDebugInfo('Blob is empty or null');
+        return false;
+      }
+      
+      // Attempt to read the first few bytes to check for PDF signature
+      const arrayBuffer = await blob.slice(0, 5).arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      const header = String.fromCharCode(...bytes);
+      
+      // PDF files start with %PDF-
+      if (header !== '%PDF-') {
+        setDebugInfo(`Invalid PDF header: ${JSON.stringify(Array.from(bytes))}`);
+        return false;
+      }
+      
+      return true;
+    } catch (err) {
+      console.error('Error validating PDF:', err);
+      setDebugInfo(`Validation error: ${err.message}`);
+      return false;
+    }
+  };
+
   useEffect(() => {
     const fetchPdfContent = async () => {
       try {
         setLoading(true);
+        setError('');
+        setPdfData(null);
+        setDebugInfo(null);
 
         if (!syllabusFilePath) {
           throw new Error('No syllabus path provided');
@@ -105,15 +131,13 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
         // Encode the file path for use in URL
         const encodedPath = encodeURIComponent(syllabusFilePath);
         
-        // First, try to get the file metadata
-        let fileName = 'syllabus.pdf'; // Default filename
+        // Default filename
+        let fileName = 'syllabus.pdf';
         
         try {
-          // Fetch metadata separately with robust error handling
           const metadataResponse = await fetch(`${API_BASE_URL}/get-syllabus-url/${encodedPath}`);
           
           if (metadataResponse.ok) {
-            // Check if the response is JSON
             const contentType = metadataResponse.headers.get('content-type');
             if (contentType && contentType.includes('application/json')) {
               const metadata = await metadataResponse.json();
@@ -121,58 +145,71 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
                 fileName = metadata.fileName;
                 setFileName(fileName);
               }
-            } else {
-              console.warn('Metadata response was not JSON:', contentType);
             }
-          } else {
-            console.warn('Failed to get metadata, using default filename');
           }
         } catch (metadataError) {
           console.warn('Error fetching metadata:', metadataError);
-          // Continue with default filename
         }
         
-        // Direct approach - fetch the PDF content directly with proper error handling
-        const pdfResponse = await fetch(`${API_BASE_URL}/proxy-pdf-content/${encodedPath}`, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/pdf',
-          },
-        });
+        // Try direct PDF fetch with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
         
-        // Check for HTTP errors
-        if (!pdfResponse.ok) {
-          // Try to parse error response
-          const contentType = pdfResponse.headers.get('content-type');
+        try {
+          const pdfResponse = await fetch(`${API_BASE_URL}/proxy-pdf-content/${encodedPath}`, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/pdf',
+              'Cache-Control': 'no-cache'
+            },
+            signal: controller.signal
+          });
           
-          if (contentType && contentType.includes('application/json')) {
-            const errorData = await pdfResponse.json();
-            throw new Error(errorData.message || `Server error: ${pdfResponse.status}`);
-          } else {
-            throw new Error(`Failed to retrieve PDF content: ${pdfResponse.status} ${pdfResponse.statusText}`);
+          clearTimeout(timeoutId);
+          
+          if (!pdfResponse.ok) {
+            const contentType = pdfResponse.headers.get('content-type');
+            setDebugInfo(`Response not OK: ${pdfResponse.status}, Content-Type: ${contentType}`);
+            
+            if (contentType && contentType.includes('application/json')) {
+              const errorData = await pdfResponse.json();
+              throw new Error(errorData.message || `Server error: ${pdfResponse.status}`);
+            } else {
+              throw new Error(`Failed to retrieve PDF: ${pdfResponse.status} ${pdfResponse.statusText}`);
+            }
           }
+          
+          // Get content type and log it for debugging
+          const contentType = pdfResponse.headers.get('content-type');
+          setDebugInfo(`Content-Type: ${contentType}`);
+          
+          // Get the response as a blob
+          const pdfBlob = await pdfResponse.blob();
+          
+          // Log blob size for debugging
+          setDebugInfo(prev => `${prev || ''}, Blob size: ${pdfBlob.size} bytes`);
+          
+          // Validate the PDF structure
+          const isValid = await isPdfValid(pdfBlob);
+          if (!isValid) {
+            throw new Error('Invalid PDF structure. The file may be corrupted or not a PDF.');
+          }
+          
+          // Create a blob URL from the validated blob
+          const pdfBlobUrl = URL.createObjectURL(pdfBlob);
+          
+          // Set the blob URL as our PDF data source
+          setPdfData(pdfBlobUrl);
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+          
+          if (fetchError.name === 'AbortError') {
+            throw new Error('Request timed out. Please try again.');
+          }
+          
+          throw fetchError;
         }
         
-        // Check that we actually got a PDF
-        const contentType = pdfResponse.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/pdf')) {
-          console.warn('Invalid content type received:', contentType);
-          // Try to handle the response anyway
-        }
-        
-        // Convert the response to a blob
-        const pdfBlob = await pdfResponse.blob();
-        
-        // Verify we have actual content
-        if (pdfBlob.size === 0) {
-          throw new Error('Received empty PDF content');
-        }
-        
-        // Create a blob URL from the blob
-        const pdfBlobUrl = URL.createObjectURL(pdfBlob);
-        
-        // Set the blob URL as our PDF data source
-        setPdfData(pdfBlobUrl);
         setLoading(false);
       } catch (err) {
         console.error('PDF fetching error:', err);
@@ -183,7 +220,7 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
 
     fetchPdfContent();
 
-    // More robust context menu handler
+    // Security event handlers and CSS
     const handleContextMenu = (e) => {
       if (e && e.preventDefault) {
         e.preventDefault();
@@ -191,16 +228,13 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
       return false;
     };
 
-    // More robust keydown handler
     const handleKeyDown = (e) => {
       if (!e) return;
       
-      // Disable Ctrl+C, Ctrl+A, Ctrl+S, Ctrl+P, etc.
       if ((e.ctrlKey || e.metaKey) && e.preventDefault) {
         e.preventDefault();
       }
       
-      // Disable F12 (dev tools), Print Screen, etc.
       if ([112, 123, 44].includes(e.keyCode) && e.preventDefault) {
         e.preventDefault();
       }
@@ -209,10 +243,8 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
     document.addEventListener('contextmenu', handleContextMenu);
     document.addEventListener('keydown', handleKeyDown);
 
-    // Additional security: Remove buttons by CSS after render
     const removeButtonsByCSS = () => {
       setTimeout(() => {
-        // Target buttons by their common attributes
         const downloadButtons = document.querySelectorAll('[data-testid*="download"], [aria-label*="download"], [title*="download"], [aria-label*="print"], [title*="print"], [aria-label*="save"], [title*="save"]');
         downloadButtons.forEach(button => {
           if (button && button.style) {
@@ -222,10 +254,8 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
       }, 500);
     };
 
-    // Call initially and whenever the component updates
     removeButtonsByCSS();
     
-    // Add a MutationObserver to handle dynamically added buttons
     const observer = new MutationObserver(removeButtonsByCSS);
     observer.observe(document.body, { childList: true, subtree: true });
 
@@ -234,7 +264,6 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
       document.removeEventListener('keydown', handleKeyDown);
       observer.disconnect();
       
-      // Clean up the blob URL to avoid memory leaks
       if (pdfData) {
         URL.revokeObjectURL(pdfData);
       }
@@ -243,9 +272,7 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
 
   // Custom CSS to inject for hiding buttons
   useEffect(() => {
-    // Create a style element
     const style = document.createElement('style');
-    // Define CSS to hide download/print buttons
     style.textContent = `
       [data-testid*="download"], [aria-label*="download"], [title*="download"],
       [data-testid*="print"], [aria-label*="print"], [title*="print"],
@@ -255,10 +282,8 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
         display: none !important;
       }
     `;
-    // Append to document head
     document.head.appendChild(style);
     
-    // Cleanup
     return () => {
       document.head.removeChild(style);
     };
@@ -266,7 +291,7 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
 
   const handleError = (error) => {
     console.error('PDF viewer error:', error);
-    setError('Error displaying PDF. Please try again later.');
+    setError(`Error displaying PDF: ${error.message || 'Unknown error'}`);
   };
 
   // More informative fallback component
@@ -287,6 +312,11 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
         <div className="alert alert-danger">
           <h4>Unable to load syllabus</h4>
           <p>{error}</p>
+          {debugInfo && (
+            <div className="mt-2 p-2 bg-light text-dark text-start" style={{fontSize: '0.8rem'}}>
+              <strong>Debug Info:</strong> {debugInfo}
+            </div>
+          )}
           <button 
             className="btn btn-primary mt-2" 
             onClick={() => window.location.reload()}
@@ -307,7 +337,6 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
 
   // Custom watermark component
   const Watermark = () => {
-    // Include student name in watermark if available
     const watermarkText = `ARN Private Exam Conduct${studentName ? ` - ${studentName}` : ''}`;
     
     return (
@@ -324,11 +353,41 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
         justifyContent: 'center',
         opacity: 0.12,
         transform: 'rotate(-20deg)',
-        fontSize: isMobile ? '24px' : '48px', // Smaller font on mobile
+        fontSize: isMobile ? '24px' : '48px',
         color: '#000000',
         fontWeight: 'bold'
       }}>
         {watermarkText}
+      </div>
+    );
+  };
+
+  // Try a different approach to render the PDF if we have data
+  const renderPdfViewer = () => {
+    if (!pdfData) return null;
+    
+    return (
+      <div 
+        style={{ 
+          height: isMobile ? '70vh' : '80vh',
+          position: 'relative',
+          overflow: 'hidden',
+          width: '100%'
+        }}
+        ref={viewerRef}
+        className="rpv-core__viewer"
+      >
+        <Watermark />
+        <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+          <Viewer
+            fileUrl={pdfData}
+            plugins={[defaultLayoutPluginInstance]}
+            onError={handleError}
+            defaultScale={isMobile ? SpecialZoomLevel.PageFit : 1.5}
+            initialPage={0}
+            textSelectionEnabled={false}
+          />
+        </Worker>
       </div>
     );
   };
@@ -346,28 +405,7 @@ export default function SecurePdfViewer({ syllabusFilePath, studentName }) {
           {loading || error || !pdfData ? (
             renderFallback()
           ) : (
-            <div 
-              style={{ 
-                height: isMobile ? '70vh' : '80vh',
-                position: 'relative',
-                overflow: 'hidden',
-                width: '100%'
-              }}
-              ref={viewerRef}
-              className="rpv-core__viewer"
-            >
-              <Watermark />
-              <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-                <Viewer
-                  fileUrl={pdfData}
-                  plugins={[defaultLayoutPluginInstance]}
-                  onError={handleError}
-                  defaultScale={isMobile ? SpecialZoomLevel.PageFit : 1.5} // PageFit for mobile, 150% for desktop
-                  initialPage={0}
-                  textSelectionEnabled={false}
-                />
-              </Worker>
-            </div>
+            renderPdfViewer()
           )}
         </div>
 
