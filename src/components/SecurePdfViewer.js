@@ -8,7 +8,7 @@ import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 import API_BASE_URL from './ApiConifg';
 import { SpecialZoomLevel } from '@react-pdf-viewer/core';
 
-export default function SecurePdfViewer({ syllabusFilePath }) {
+export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
   const [pdfUrl, setPdfUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -93,24 +93,49 @@ export default function SecurePdfViewer({ syllabusFilePath }) {
   );
 
   useEffect(() => {
-    const fetchPdf = async () => {
+    const fetchSyllabus = async () => {
       try {
         setLoading(true);
 
-        if (!syllabusFilePath) {
-          throw new Error('No syllabus path provided');
+        if (!selectedSyllabus) {
+          throw new Error('No syllabus selected');
         }
 
-        // Use the get-syllabus-url endpoint instead of proxy-pdf
-        const encodedPath = encodeURIComponent(syllabusFilePath);
-        const response = await fetch(`${API_BASE_URL}/get-syllabus-url/${encodedPath}`);
+        // Fetch all syllabi using the new API endpoint
+        const response = await fetch(`${API_BASE_URL}/api/pdf-syllabi`);
         
         if (!response.ok) {
-          throw new Error(`Failed to fetch PDF: ${response.status}`);
+          throw new Error(`Failed to fetch syllabi: ${response.status}`);
         }
         
-        const data = await response.json();
-        setPdfUrl(data.signedUrl);
+        const allSyllabi = await response.json();
+        
+        // Find the selected syllabus in the data
+        let foundSyllabus = null;
+        
+        // Look through all categories to find the matching syllabus
+        Object.keys(allSyllabi).forEach(category => {
+          Object.keys(allSyllabi[category]).forEach(title => {
+            // Match by title and category (adjust this based on how you identify syllabi)
+            if (
+              title === selectedSyllabus.syllabusTitle && 
+              category === selectedSyllabus.syllabusCategory
+            ) {
+              foundSyllabus = allSyllabi[category][title];
+            }
+          });
+        });
+        
+        if (!foundSyllabus) {
+          throw new Error('Selected syllabus not found in available syllabi');
+        }
+        
+        if (foundSyllabus.fileError) {
+          throw new Error('This syllabus file is currently unavailable');
+        }
+        
+        // Use the fileUrl from the found syllabus
+        setPdfUrl(foundSyllabus.fileUrl);
         
         setLoading(false);
       } catch (err) {
@@ -120,7 +145,7 @@ export default function SecurePdfViewer({ syllabusFilePath }) {
       }
     };
 
-    fetchPdf();
+    fetchSyllabus();
 
     // More robust context menu handler
     const handleContextMenu = (e) => {
@@ -173,7 +198,7 @@ export default function SecurePdfViewer({ syllabusFilePath }) {
       document.removeEventListener('keydown', handleKeyDown);
       observer.disconnect();
     };
-  }, [syllabusFilePath]);
+  }, [selectedSyllabus]);
 
   // Custom CSS to inject for hiding buttons
   useEffect(() => {
@@ -203,7 +228,7 @@ export default function SecurePdfViewer({ syllabusFilePath }) {
     setError('Error displaying PDF. Please try again later.');
   };
 
-  // Custom watermark component
+  // Custom watermark component with student name
   const Watermark = () => (
     <div style={{
       position: 'absolute',
@@ -222,28 +247,7 @@ export default function SecurePdfViewer({ syllabusFilePath }) {
       color: '#000000',
       fontWeight: 'bold'
     }}>
-      ARN Private Exam Conduct
-    </div>
-  );
-
-  // Custom toolbar component to completely replace the default one
-  const CustomToolbar = () => (
-    <div className="toolbar bg-light border-bottom p-1 d-flex justify-content-center align-items-center">
-      <div className="d-flex gap-2">
-        {/* Zoom controls */}
-        <button className="btn btn-sm btn-outline-secondary">-</button>
-        <div className="d-flex align-items-center">
-          <span className="px-2">{isMobile ? 'Fit' : '150%'}</span>
-        </div>
-        <button className="btn btn-sm btn-outline-secondary">+</button>
-        
-        {/* Page navigation */}
-        <div className="d-flex align-items-center mx-3">
-          <button className="btn btn-sm btn-outline-secondary me-2">&lt;</button>
-          <span>Page <input type="text" className="form-control form-control-sm" style={{width: '40px'}} /> of </span>
-          <button className="btn btn-sm btn-outline-secondary ms-2">&gt;</button>
-        </div>
-      </div>
+      ARN Private Exam - {studentName}
     </div>
   );
 
@@ -251,13 +255,23 @@ export default function SecurePdfViewer({ syllabusFilePath }) {
     <div className="container-fluid mt-2 mt-md-4">
       <div className="card shadow">
         <div className="card-header bg-dark text-white text-center">
-          <h2 className={isMobile ? "fs-4" : "fs-2"}>Syllabus Viewer</h2>
+          <h2 className={isMobile ? "fs-4" : "fs-2"}>
+            {selectedSyllabus ? selectedSyllabus.syllabusTitle : 'Syllabus Viewer'}
+          </h2>
+          {selectedSyllabus && (
+            <p className="mb-0 text-light">
+              {selectedSyllabus.syllabusCategory}
+            </p>
+          )}
         </div>
 
         <div className="card-body p-1 p-md-3 text-center">
           {loading ? (
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Loading...</span>
+            <div className="d-flex flex-column align-items-center justify-content-center py-5">
+              <div className="spinner-border text-primary mb-3" role="status">
+                <span className="visually-hidden">Loading...</span>
+              </div>
+              <p>Loading your secure syllabus...</p>
             </div>
           ) : error ? (
             <div className="alert alert-danger">{error}</div>
@@ -291,7 +305,7 @@ export default function SecurePdfViewer({ syllabusFilePath }) {
 
         <div className="card-footer text-center">
           <small className="text-muted">
-            © {new Date().getFullYear()} ARN Education - All rights reserved.
+            © {new Date().getFullYear()} ARN Education - All rights reserved. This document is for {studentName}'s use only.
           </small>
         </div>
       </div>

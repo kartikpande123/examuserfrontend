@@ -109,14 +109,13 @@ export default function PdfSyllabusEntry() {
             // Calculate remaining days
             const remainingDays = calculateRemainingDays(purchase.expirationDate);
             
-            // Format purchase data for display
+            // Format purchase data for display  
             active.push({
               syllabusTitle: purchase.syllabusTitle,
               syllabusCategory: purchase.syllabusCategory,
               purchaseDate: purchase.purchaseDate,
               expirationDate: purchase.expirationDate,
-              remainingDays: remainingDays,
-              syllabusFilePath: purchase.syllabusFilePath
+              remainingDays: remainingDays
             });
           }
         });
@@ -215,7 +214,7 @@ export default function PdfSyllabusEntry() {
           Back to Syllabuses
         </button>
         <SecurePdfViewer 
-          syllabusFilePath={selectedSyllabus.syllabusFilePath}
+          selectedSyllabus={selectedSyllabus}
           studentName={studentDetails?.name}
         />
       </div>
