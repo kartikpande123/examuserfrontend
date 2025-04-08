@@ -202,6 +202,18 @@ export default function PdfSyllabusEntry() {
     }
   };
 
+  // If PDF viewer is open, show it instead of the main content
+  if (viewerOpen && selectedSyllabus) {
+    return (
+      <div className="position-relative">
+        <SecurePdfViewer 
+          selectedSyllabus={selectedSyllabus}
+          studentName={studentDetails?.name}
+        />
+      </div>
+    );
+  }
+
   return (
     <div style={styles.container}>
       <div className="card" style={styles.card}>
