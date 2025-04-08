@@ -53,7 +53,7 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
     },
   });
 
-  // Completely remove all unwanted buttons from toolbar (more comprehensive approach)
+  // Completely remove all unwanted buttons from toolbar including "Back to Syllabus" button
   const { renderDefaultToolbar } = defaultLayoutPluginInstance.toolbarPluginInstance;
   defaultLayoutPluginInstance.toolbarPluginInstance.renderToolbar = (Toolbar) => (
     <Toolbar>
@@ -64,15 +64,17 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
           Open,
           Save,
           SwitchTheme,
+          GoBack, // Explicitly removing any GoBack or back button option
+          GoTo,   // Sometimes used for navigation back
           // Include additional button slots that should be removed
           ...otherSlots
         } = slots;
         
-        // Filter out any upload/download related buttons that might be in otherSlots
+        // Filter out any upload/download related buttons and back buttons
         const filteredSlots = {};
         Object.keys(otherSlots).forEach(slotKey => {
-          // Skip any slots with names containing these terms
-          if (!['download', 'print', 'save', 'open', 'upload'].some(term => 
+          // Skip any slots with these terms
+          if (!['download', 'print', 'save', 'open', 'upload', 'back', 'previous', 'return'].some(term => 
             slotKey.toLowerCase().includes(term)
           )) {
             filteredSlots[slotKey] = otherSlots[slotKey];
@@ -86,6 +88,8 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
           Print: () => <></>,
           Open: () => <></>,
           Save: () => <></>,
+          GoBack: () => <></>, // Empty the back button slot
+          GoTo: () => <></>,   // Empty navigation slot that might be used for back functionality
           // Any other slots we want to remove but weren't caught above
         });
       }}
@@ -177,8 +181,13 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
     const removeButtonsByCSS = () => {
       setTimeout(() => {
         // Target buttons by their common attributes
-        const downloadButtons = document.querySelectorAll('[data-testid*="download"], [aria-label*="download"], [title*="download"], [aria-label*="print"], [title*="print"], [aria-label*="save"], [title*="save"]');
-        downloadButtons.forEach(button => {
+        const buttonsToRemove = document.querySelectorAll(
+          '[data-testid*="download"], [aria-label*="download"], [title*="download"], ' +
+          '[aria-label*="print"], [title*="print"], [aria-label*="save"], [title*="save"], ' +
+          '[data-testid*="back"], [aria-label*="back"], [title*="back"], ' + // Target back buttons
+          '[data-testid*="return"], [aria-label*="return"], [title*="return"]' // Target return buttons
+        );
+        buttonsToRemove.forEach(button => {
           if (button && button.style) {
             button.style.display = 'none';
           }
@@ -204,13 +213,16 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
   useEffect(() => {
     // Create a style element
     const style = document.createElement('style');
-    // Define CSS to hide download/print buttons
+    // Define CSS to hide download/print buttons and back buttons
     style.textContent = `
       [data-testid*="download"], [aria-label*="download"], [title*="download"],
       [data-testid*="print"], [aria-label*="print"], [title*="print"],
       [data-testid*="save"], [aria-label*="save"], [title*="save"],
       [data-testid*="open"], [aria-label*="open"], [title*="open"],
-      [data-testid*="upload"], [aria-label*="upload"], [title*="upload"] {
+      [data-testid*="upload"], [aria-label*="upload"], [title*="upload"],
+      [data-testid*="back"], [aria-label*="back"], [title*="back"],
+      [data-testid*="return"], [aria-label*="return"], [title*="return"],
+      button:contains("Back"), button:contains("Return"), a:contains("Back"), a:contains("Return") {
         display: none !important;
       }
     `;
