@@ -202,25 +202,6 @@ export default function PdfSyllabusEntry() {
     }
   };
 
-  // If PDF viewer is open, show it instead of the main content
-  if (viewerOpen && selectedSyllabus) {
-    return (
-      <div className="position-relative">
-        <button 
-          className="btn btn-primary position-absolute" 
-          style={{ top: 20, left: 20, zIndex: 1000 }}
-          onClick={closePdfViewer}
-        >
-          Back to Syllabuses
-        </button>
-        <SecurePdfViewer 
-          selectedSyllabus={selectedSyllabus}
-          studentName={studentDetails?.name}
-        />
-      </div>
-    );
-  }
-
   return (
     <div style={styles.container}>
       <div className="card" style={styles.card}>
