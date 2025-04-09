@@ -44,6 +44,15 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
           zoom(isMobile ? 1 : 1.5); // Maintain appropriate zoom when exiting full screen
         },
       },
+      // Completely disable these features at plugin level
+      downloadPlugin: {
+        enableShortcutKey: false,
+        enableDownload: false,
+      },
+      printPlugin: {
+        enableShortcutKey: false,
+        enablePrint: false,
+      },
     },
     // Disable all plugins that might allow downloading or printing
     sidebarPlugin: {
@@ -53,45 +62,35 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
     },
   });
 
-  // Completely remove all unwanted buttons from toolbar including "Back to Syllabus" button
+  // Completely overriding the toolbar to remove unwanted buttons
   const { renderDefaultToolbar } = defaultLayoutPluginInstance.toolbarPluginInstance;
   defaultLayoutPluginInstance.toolbarPluginInstance.renderToolbar = (Toolbar) => (
     <Toolbar>
       {(slots) => {
-        const {
-          Download,
-          Print,
-          Open,
-          Save,
-          SwitchTheme,
-          GoBack, // Explicitly removing any GoBack or back button option
-          GoTo,   // Sometimes used for navigation back
-          // Include additional button slots that should be removed
-          ...otherSlots
-        } = slots;
+        // Only keep the specific slots we want to allow
+        const allowedSlots = [
+          'CurrentPageInput',
+          'GoToNextPage',
+          'GoToPreviousPage',
+          'NumberOfPages',
+          'ShowSearchPopover',
+          'Zoom',
+          'ZoomIn',
+          'ZoomOut',
+          'EnterFullScreen',
+          'SwitchViewMode',
+        ];
         
-        // Filter out any upload/download related buttons and back buttons
-        const filteredSlots = {};
-        Object.keys(otherSlots).forEach(slotKey => {
-          // Skip any slots with these terms
-          if (!['download', 'print', 'save', 'open', 'upload', 'back', 'previous', 'return'].some(term => 
-            slotKey.toLowerCase().includes(term)
-          )) {
-            filteredSlots[slotKey] = otherSlots[slotKey];
+        // Create a new slots object with only the allowed slots
+        const safeSlots = {};
+        
+        allowedSlots.forEach(slotName => {
+          if (slots[slotName]) {
+            safeSlots[slotName] = slots[slotName];
           }
         });
-
-        return renderDefaultToolbar({
-          ...filteredSlots,
-          // Explicitly empty these slots
-          Download: () => <></>,
-          Print: () => <></>,
-          Open: () => <></>,
-          Save: () => <></>,
-          GoBack: () => <></>, // Empty the back button slot
-          GoTo: () => <></>,   // Empty navigation slot that might be used for back functionality
-          // Any other slots we want to remove but weren't caught above
-        });
+        
+        return renderDefaultToolbar(safeSlots);
       }}
     </Toolbar>
   );
@@ -151,85 +150,165 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
 
     fetchSyllabus();
 
-    // More robust context menu handler
+    // Prevent context menu (right-click)
     const handleContextMenu = (e) => {
-      if (e && e.preventDefault) {
-        e.preventDefault();
-      }
+      e.preventDefault();
       return false;
     };
 
-    // More robust keydown handler
+    // Block keyboard shortcuts for printing, saving, etc.
     const handleKeyDown = (e) => {
-      if (!e) return;
-      
-      // Disable Ctrl+C, Ctrl+A, Ctrl+S, Ctrl+P, etc.
-      if ((e.ctrlKey || e.metaKey) && e.preventDefault) {
+      // Block Ctrl/Cmd + P (print)
+      // Block Ctrl/Cmd + S (save)
+      // Block Ctrl/Cmd + Shift + S (save as)
+      // Block Ctrl/Cmd + C (copy)
+      // Block F12 (developer tools)
+      if (
+        ((e.ctrlKey || e.metaKey) && 
+          (e.key === 'p' || e.key === 's' || e.key === 'c' || 
+          (e.shiftKey && e.key === 'S'))
+        ) || 
+        e.key === 'F12' || 
+        e.key === 'PrintScreen'
+      ) {
         e.preventDefault();
-      }
-      
-      // Disable F12 (dev tools), Print Screen, etc.
-      if ([112, 123, 44].includes(e.keyCode) && e.preventDefault) {
-        e.preventDefault();
+        e.stopPropagation();
+        return false;
       }
     };
 
-    document.addEventListener('contextmenu', handleContextMenu);
-    document.addEventListener('keydown', handleKeyDown);
-
-    // Additional security: Remove buttons by CSS after render
-    const removeButtonsByCSS = () => {
-      setTimeout(() => {
-        // Target buttons by their common attributes
-        const buttonsToRemove = document.querySelectorAll(
-          '[data-testid*="download"], [aria-label*="download"], [title*="download"], ' +
-          '[aria-label*="print"], [title*="print"], [aria-label*="save"], [title*="save"], ' +
-          '[data-testid*="back"], [aria-label*="back"], [title*="back"], ' + // Target back buttons
-          '[data-testid*="return"], [aria-label*="return"], [title*="return"]' // Target return buttons
-        );
-        buttonsToRemove.forEach(button => {
-          if (button && button.style) {
-            button.style.display = 'none';
-          }
-        });
-      }, 500);
-    };
-
-    // Call initially and whenever the component updates
-    removeButtonsByCSS();
+    // Apply event listeners
+    document.addEventListener('contextmenu', handleContextMenu, true);
+    document.addEventListener('keydown', handleKeyDown, true);
     
-    // Add a MutationObserver to handle dynamically added buttons
-    const observer = new MutationObserver(removeButtonsByCSS);
-    observer.observe(document.body, { childList: true, subtree: true });
+    // Use MutationObserver to continuously remove unwanted buttons
+    const removeUnwantedButtons = () => {
+      const selectors = [
+        '[data-testid*="download"]',
+        '[aria-label*="download"]',
+        '[title*="download"]',
+        '[data-testid*="print"]',
+        '[aria-label*="print"]',
+        '[title*="print"]',
+        '[data-testid*="save"]',
+        '[aria-label*="save"]',
+        '[title*="save"]',
+        '[data-testid*="open"]',
+        '[aria-label*="open"]',
+        '[title*="open"]',
+        '[data-testid*="upload"]',
+        '[aria-label*="upload"]',
+        '[title*="upload"]',
+        '.rpv-core__text-layer', // Prevent text selection
+        'button:contains("Download")',
+        'button:contains("Print")',
+        'button:contains("Save")',
+        'button:contains("Open")'
+      ];
+      
+      selectors.forEach(selector => {
+        try {
+          const elements = document.querySelectorAll(selector);
+          elements.forEach(el => {
+            if (el && el.parentNode) {
+              el.parentNode.removeChild(el);
+            }
+          });
+        } catch (e) {
+          // Silent fail - some selectors might not be valid
+        }
+      });
+    };
 
+    // Run initially
+    removeUnwantedButtons();
+    
+    // Set up observer for dynamically loaded elements
+    const observer = new MutationObserver(() => {
+      removeUnwantedButtons();
+    });
+    
+    observer.observe(document.body, { 
+      childList: true, 
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class', 'style', 'id']
+    });
+
+    // Anti-iframe protection - prevent embedding in other sites
+    if (window.self !== window.top) {
+      document.body.innerHTML = 'Access denied';
+    }
+
+    // Cleanup
     return () => {
-      document.removeEventListener('contextmenu', handleContextMenu);
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('contextmenu', handleContextMenu, true);
+      document.removeEventListener('keydown', handleKeyDown, true);
       observer.disconnect();
     };
   }, [selectedSyllabus]);
 
-  // Custom CSS to inject for hiding buttons
+  // Additional CSS to block UI elements
   useEffect(() => {
-    // Create a style element
     const style = document.createElement('style');
-    // Define CSS to hide download/print buttons and back buttons
-    style.textContent = `
-      [data-testid*="download"], [aria-label*="download"], [title*="download"],
-      [data-testid*="print"], [aria-label*="print"], [title*="print"],
-      [data-testid*="save"], [aria-label*="save"], [title*="save"],
-      [data-testid*="open"], [aria-label*="open"], [title*="open"],
-      [data-testid*="upload"], [aria-label*="upload"], [title*="upload"],
-      [data-testid*="back"], [aria-label*="back"], [title*="back"],
-      [data-testid*="return"], [aria-label*="return"], [title*="return"],
-      button:contains("Back"), button:contains("Return"), a:contains("Back"), a:contains("Return") {
+    style.type = 'text/css';
+    style.innerHTML = `
+      /* Hide all download/print/save buttons */
+      [data-testid*="download"],
+      [aria-label*="download"],
+      [title*="download"],
+      [data-testid*="print"],
+      [aria-label*="print"],
+      [title*="print"],
+      [data-testid*="save"],
+      [aria-label*="save"],
+      [title*="save"],
+      [data-testid*="open"],
+      [aria-label*="open"],
+      [title*="open"],
+      [data-testid*="upload"],
+      [aria-label*="upload"],
+      [title*="upload"],
+      button[aria-label*="download"],
+      button[aria-label*="print"],
+      button[aria-label*="save"],
+      button[aria-label*="open"] {
         display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        position: absolute !important;
+        top: -9999px !important;
+        left: -9999px !important;
+        width: 0 !important;
+        height: 0 !important;
+        overflow: hidden !important;
+        z-index: -1 !important;
+      }
+      
+      /* Disable text selection */
+      .rpv-core__text-layer {
+        pointer-events: none !important;
+        user-select: none !important;
+        -webkit-user-select: none !important;
+        -moz-user-select: none !important;
+        -ms-user-select: none !important;
+      }
+      
+      /* Prevent cursor from showing select behavior */
+      .rpv-core__viewer {
+        cursor: default !important;
+      }
+      
+      /* Make elements unselectable */
+      .rpv-core__viewer * {
+        user-select: none !important;
+        -webkit-user-select: none !important;
+        -moz-user-select: none !important;
+        -ms-user-select: none !important;
       }
     `;
-    // Append to document head
     document.head.appendChild(style);
     
-    // Cleanup
     return () => {
       document.head.removeChild(style);
     };
@@ -296,7 +375,7 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
                 width: '100%'
               }}
               ref={viewerRef}
-              className="rpv-core__viewer"
+              className="rpv-core__viewer no-select"
             >
               <Watermark />
               <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
@@ -307,6 +386,16 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
                   defaultScale={isMobile ? SpecialZoomLevel.PageFit : 1.5} // PageFit for mobile, 150% for desktop
                   initialPage={0}
                   textSelectionEnabled={false}
+                  canvasList={{
+                    onRenderSuccess: () => {
+                      // Add additional canvas protection
+                      const canvases = document.querySelectorAll('.rpv-core__canvas-layer canvas');
+                      canvases.forEach(canvas => {
+                        canvas.style.pointerEvents = 'none';
+                        canvas.setAttribute('aria-readonly', 'true');
+                      });
+                    }
+                  }}
                 />
               </Worker>
             </div>
