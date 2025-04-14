@@ -19,6 +19,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import API_BASE_URL from './ApiConifg';
 import './ExamRegistration.css';
+import logo from "../Images/LOGO.jpg"
 
 const ExamPurchaseRegistration = () => {
   // State management
@@ -34,6 +35,7 @@ const ExamPurchaseRegistration = () => {
   const [purchasedStudentDetails, setPurchasedStudentDetails] = useState(null);
   const [isPurchased, setIsPurchased] = useState(false);
   const [expirationDate, setExpirationDate] = useState(null);
+  const [paymentDetails, setPaymentDetails] = useState(null);
 
   // Form data for new registration
   const [formData, setFormData] = useState({
@@ -188,6 +190,201 @@ const ExamPurchaseRegistration = () => {
 };
 
 
+const generateInvoicePDF = () => {
+  try {
+    if (!purchasedStudentDetails || !selectedExam) {
+      toast.error('Purchase details not found. Cannot generate invoice.');
+      return;
+    }
+    
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+    
+    // Payment and order IDs - use values from the payment response
+    const paymentId = selectedExam.fees === 0 ? `FREE-${Date.now()}` : (paymentDetails?.paymentId || `INV-${Date.now()}`);
+    const orderId = selectedExam.fees === 0 ? `FREE-ORDER-${Date.now()}` : (paymentDetails?.orderId || '');
+    
+    // Header background
+    pdf.setFillColor(0, 82, 165);
+    pdf.rect(0, 0, 210, 15, 'F');
+    
+    // Logo placeholder
+    pdf.setFillColor(230, 230, 230);
+    pdf.rect(20, 20, 40, 40, 'F');
+    pdf.setFontSize(8);
+    pdf.setTextColor(100, 100, 100);
+    
+
+    // Logo
+    pdf.addImage(logo, 'JPEG', 20, 20, 40, 40);
+    
+    // Company details
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(14);
+    pdf.setTextColor(0, 0, 0);
+    pdf.text('ARN EXAM PRIVATE CONDUCT', 70, 30);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(10);
+    pdf.text('Karnataka India 580011', 70, 37);
+    pdf.text('Phone: +91 6360785195', 70, 44);
+    pdf.text('Email: support@arn.com', 70, 51);
+    pdf.text('GSTIN: 29BXYPN0096F1ZS', 70, 58);
+    
+    // Invoice title
+    pdf.setFillColor(245, 245, 245);
+    pdf.roundedRect(65, 65, 80, 15, 3, 3, 'F');
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(22);
+    pdf.setTextColor(0, 82, 165);
+    pdf.text('INVOICE', 105, 77, { align: 'center' });
+    
+    // Decorative line
+    pdf.setLineWidth(0.5);
+    pdf.setDrawColor(0, 82, 165);
+    pdf.line(20, 85, 190, 85);
+    
+    // Invoice details
+    pdf.setFontSize(11);
+    pdf.setTextColor(0, 0, 0);
+    
+    // Check if it's a free exam
+    const isFree = selectedExam.fees === 0;
+    
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Invoice Number:', 20, 95);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`INV-${paymentId ? paymentId.substring(0, 8) : new Date().getTime().toString().substring(0, 8)}`, 60, 95);
+    
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Date:', 120, 95);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(new Date().toLocaleDateString('en-IN'), 135, 95);
+    
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Payment ID:', 20, 102);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(paymentId || 'FREE', 60, 102);
+    
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Order ID:', 20, 109);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(orderId || 'FREE-ORDER', 60, 109);
+    
+    // Customer details
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Bill To:', 120, 102);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(purchasedStudentDetails.name || 'N/A', 120, 109);
+    pdf.text(purchasedStudentDetails.email || 'N/A', 120, 116);
+    pdf.text(purchasedStudentDetails.phoneNo || 'N/A', 120, 123);
+    pdf.text(`${purchasedStudentDetails.district || 'N/A'}, ${purchasedStudentDetails.state || 'N/A'}`, 120, 130);
+    
+    // GST Note - only show for paid exams
+    if (!isFree && parseFloat(selectedExam.fees) > 0) {
+      pdf.setFont('helvetica', 'bolditalic');
+      pdf.setFontSize(12);
+      pdf.setTextColor(0, 82, 165);
+      pdf.setFillColor(230, 240, 255);
+      pdf.roundedRect(20, 144, 170, 10, 2, 2, 'F');
+      pdf.text('Note: The amount shown below is inclusive of 18% GST.', 25, 151);
+    }
+    
+    // Table header
+    pdf.setFillColor(0, 82, 165);
+    pdf.rect(20, 160, 170, 10, 'F');
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(11);
+    pdf.setTextColor(255, 255, 255);
+    pdf.text('Description', 25, 167);
+    pdf.text('Amount (INR)', 160, 167, { align: 'center' });
+    
+    // Reset text color and font
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFont('helvetica', 'normal');
+    let currentY = 180;
+    
+    const examTitle = selectedExam.title;
+    const examPrice = selectedExam.fees?.toString() || '0';
+    
+    if (examTitle.length > 30) {
+      const firstLine = examTitle.substring(0, 30);
+      const secondLine = examTitle.substring(30);
+      pdf.text(`Exam: ${firstLine}`, 25, currentY);
+      pdf.text(`${secondLine}`, 25, currentY + 7);
+      
+      // For free exam, show "FREE" instead of price
+      if (isFree || parseFloat(examPrice) === 0) {
+        pdf.text('FREE', 160, currentY, { align: 'center' });
+      } else {
+        pdf.text(`₹ ${examPrice}`, 160, currentY, { align: 'center' });
+      }
+      currentY += 14;
+    } else {
+      pdf.text(`Exam: ${examTitle}`, 25, currentY);
+      
+      // For free exam, show "FREE" instead of price
+      if (isFree || parseFloat(examPrice) === 0) {
+        pdf.text('FREE', 160, currentY, { align: 'center' });
+      } else {
+        pdf.text(`₹ ${examPrice}`, 160, currentY, { align: 'center' });
+      }
+      currentY += 7;
+    }
+    
+    // Access details
+    pdf.text(`Access Duration: ${selectedExam.duration}`, 25, currentY);
+    currentY += 7;
+    pdf.text(`Expiry Date: ${formatDate(expirationDate)}`, 25, currentY);
+    currentY += 10;
+    
+    // Total Amount Box
+    pdf.setFillColor(0, 82, 165);
+    pdf.rect(120, currentY + 10, 70, 15, 'F');
+    pdf.setLineWidth(0.2);
+    pdf.setDrawColor(0, 0, 0);
+    pdf.line(20, currentY + 5, 190, currentY + 5);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(11);
+    pdf.setTextColor(255, 255, 255);
+    pdf.text('Total Amount:', 125, currentY + 20);
+    pdf.setFontSize(12);
+    
+    // For free exam, show "FREE" instead of price
+    if (isFree || parseFloat(examPrice) === 0) {
+      pdf.text('FREE', 180, currentY + 20, { align: 'right' });
+    } else {
+      pdf.text(`INR ${examPrice}`, 180, currentY + 20, { align: 'right' });
+    }
+    
+    // Footer with top border
+    pdf.setDrawColor(0, 0, 0);
+    pdf.line(20, 265, 190, 265);
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFont('helvetica', 'italic');
+    pdf.setFontSize(10);
+    pdf.text('Thank you for your purchase. This is a computer-generated invoice.', 105, 272, { align: 'center' });
+    pdf.text('For any queries, please contact ARN support team.', 105, 279, { align: 'center' });
+    pdf.text('You can reach us through the Help section as well.', 105, 286, { align: 'center' });
+    
+    // Save PDF
+    const filename = `Invoice_${purchasedStudentDetails.name || 'Student'}_${paymentId ? paymentId.substring(0, 6) : 'FREE'}.pdf`;
+    pdf.save(filename);
+    
+    toast.success('Invoice downloaded successfully!', {
+      position: "top-right",
+      autoClose: 3000,
+    });
+  } catch (error) {
+    console.error('Error generating invoice:', error);
+    toast.error('Failed to generate invoice. Please try again.');
+  }
+};
+
+
+
   // Handle PDF Download
   const handlePDFDownload = (studentDetails, purchaseDate) => {
     const doc = generateStudentPDF(studentDetails, purchaseDate);
@@ -306,6 +503,8 @@ const ExamPurchaseRegistration = () => {
       expiryDate.setDate(expiryDate.getDate() + durationDays);
       setExpirationDate(expiryDate);
 
+      
+
       // If exam is free (cost is 0), process directly
       if (selectedExam.fees === 0) {
         // Save exam purchase
@@ -361,6 +560,7 @@ const ExamPurchaseRegistration = () => {
             });
 
             if (paymentVerifyResponse.data.success) {
+              setPaymentDetails(paymentVerifyResponse.data.payment);
               // Save exam purchase with expiration date
               const purchaseResponse = await axios.post(`${API_BASE_URL}/api/save-exam-purchase`, {
                 studentId: studentDetails.studentId,
@@ -674,23 +874,39 @@ const ExamPurchaseRegistration = () => {
                         </Col>
                       </Row>
                     </div>
+                    
+                    {/* Purchase Button */}
                     <div className="d-grid gap-2">
-                      <Button 
-                        variant="success" 
-                        className="py-3 fw-bold"
-                        onClick={handleExamPurchase}
-                        disabled={isLoading || isPurchased}
-                      >
-                        {isLoading ? <Spinner animation="border" size="sm" /> : 'Confirm Purchase'}
-                      </Button>
-                      {isPurchased && (
+                      {!isPurchased ? (
                         <Button 
-                          variant="primary" 
-                          className="py-2 mt-3"
-                          onClick={handleBackToHome}
+                          variant="success" 
+                          className="py-3 fw-bold"
+                          onClick={handleExamPurchase}
+                          disabled={isLoading}
                         >
-                          Back to Home
+                          {isLoading ? <Spinner animation="border" size="sm" /> : 'Confirm Purchase'}
                         </Button>
+                      ) : (
+                        <>
+                          {/* Invoice download section - only shown after purchase */}
+                          <div className="alert alert-warning mt-3">
+                            <strong>Important:</strong> If you don't download your invoice now, you won't be able to access it in the future. Please make sure to download and save it.
+                          </div>
+                          <Button 
+                            variant="primary" 
+                            className="py-3 fw-bold mb-3"
+                            onClick={generateInvoicePDF}
+                          >
+                            <i className="fas fa-file-invoice me-2"></i> Download Invoice
+                          </Button>
+                          <Button 
+                            variant="outline-primary" 
+                            className="py-2"
+                            onClick={handleBackToHome}
+                          >
+                            Back to Home
+                          </Button>
+                        </>
                       )}
                     </div>
                   </Card.Body>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { jsPDF } from 'jspdf';
@@ -13,9 +13,23 @@ const PaymentGateway = () => {
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [hallTicketGenerated, setHallTicketGenerated] = useState(false);
+  const [invoiceGenerated, setInvoiceGenerated] = useState(false);
   const [registrationNumber, setRegistrationNumber] = useState(null);
   const [showPolicyModal, setShowPolicyModal] = useState(false);
   const [policyAccepted, setPolicyAccepted] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState(null);
+
+  useEffect(() => {
+    // Automatically generate hall ticket after payment is completed
+    if (paymentCompleted && !hallTicketGenerated && !loading) {
+      // Set a small delay to show the loading indicator
+      const timer = setTimeout(() => {
+        handleCreateHallticket();
+      }, 1500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [paymentCompleted, hallTicketGenerated, loading]);
 
   // Ensure formData exists and normalize examDate
   const formData = location.state || {};
@@ -341,6 +355,14 @@ Privacy Policy
       }
     });
 
+    // Add payment details if available
+    if (paymentDetails) {
+      formDataToSend.append('paymentId', paymentDetails.paymentId);
+      formDataToSend.append('orderId', paymentDetails.orderId);
+      formDataToSend.append('paymentAmount', paymentDetails.amount);
+      formDataToSend.append('paymentDate', paymentDetails.date);
+    }
+
     return formDataToSend;
   };
 
@@ -396,6 +418,14 @@ Privacy Policy
       if (!data.success) {
         throw new Error(data.error || 'Payment verification failed');
       }
+
+      // Store payment details for later use
+      setPaymentDetails({
+        paymentId: paymentResponse.razorpay_payment_id,
+        orderId: paymentResponse.razorpay_order_id,
+        amount: formData.examPrice,
+        date: new Date().toISOString()
+      });
 
       return data;
     } catch (error) {
@@ -463,6 +493,176 @@ Privacy Policy
     setShowPolicyModal(true);
   };
 
+  // New function to generate and download invoice
+  const handleGenerateInvoice = () => {
+    try {
+      if (!paymentDetails) {
+        setError('Payment details not found. Please try again.');
+        return;
+      }
+  
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+  
+      // Header background
+      pdf.setFillColor(0, 82, 165);
+      pdf.rect(0, 0, 210, 15, 'F');
+  
+      // Logo
+      pdf.addImage(image, 'JPEG', 20, 20, 40, 40);
+  
+      // Company details
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(14);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text('Karnataka Ayan Wholesale Supply Enterprises', 70, 30);
+  
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+      pdf.text('Karnataka India 580011', 70, 37);
+      pdf.text('Phone: +91 6360785195', 70, 44);
+      pdf.text('Email: Jubedakbar@gmail.com', 70, 51);
+      pdf.text('GSTIN: 29BXYPN0096F1ZS', 70, 58);
+  
+      // Invoice title
+      pdf.setFillColor(245, 245, 245);
+      pdf.roundedRect(65, 65, 80, 15, 3, 3, 'F');
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(22);
+      pdf.setTextColor(0, 82, 165);
+      pdf.text('INVOICE', 105, 77, { align: 'center' });
+  
+      // Decorative line
+      pdf.setLineWidth(0.5);
+      pdf.setDrawColor(0, 82, 165);
+      pdf.line(20, 85, 190, 85);
+  
+      // Invoice details
+      pdf.setFontSize(11);
+      pdf.setTextColor(0, 0, 0);
+  
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Invoice Number:', 20, 95);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`INV-${paymentDetails.paymentId.substring(0, 8)}`, 60, 95);
+  
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Date:', 120, 95);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(new Date().toLocaleDateString('en-IN'), 135, 95);
+  
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Payment ID:', 20, 102);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(paymentDetails.paymentId, 60, 102);
+  
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Order ID:', 20, 109);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(paymentDetails.orderId, 60, 109);
+  
+      // Customer details
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Bill To:', 120, 102);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(formData.candidateName || 'N/A', 120, 109);
+      pdf.text(formData.email || 'N/A', 120, 116);
+      pdf.text(formData.phone || 'N/A', 120, 123);
+      pdf.text(`${formData.district || 'N/A'}, ${formData.state || 'N/A'}`, 120, 130);
+      pdf.text(`${formData.pincode || 'N/A'}`, 120, 137);
+  
+      // GST Note
+      pdf.setFont('helvetica', 'bolditalic');
+      pdf.setFontSize(12);
+      pdf.setTextColor(0, 82, 165);
+      pdf.setFillColor(230, 240, 255);
+      pdf.roundedRect(20, 144, 170, 10, 2, 2, 'F');
+      pdf.text('Note: The amount shown below is inclusive of 18% GST.', 25, 151);
+  
+      // Table header
+      pdf.setFillColor(0, 82, 165);
+      pdf.rect(20, 160, 170, 10, 'F');
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11);
+      pdf.setTextColor(255, 255, 255);
+      pdf.text('Description', 25, 167);
+      pdf.text('Amount (INR)', 160, 167, { align: 'center' });
+  
+      // Reset text color and font
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'normal');
+  
+      let currentY = 180;
+  
+      const examName = formData.exam;
+      const examPrice = formData.examPrice?.toString() || '0';
+  
+      if (examName.length > 30) {
+        const firstLine = examName.substring(0, 30);
+        const secondLine = examName.substring(30);
+  
+        pdf.text(`Exam Registration: ${firstLine}`, 25, currentY);
+        pdf.text(`${secondLine}`, 25, currentY + 7);
+        pdf.text(`₹ ${examPrice}`, 160, currentY, { align: 'center' });
+  
+        currentY += 14;
+      } else {
+        pdf.text(`Exam Registration: ${examName}`, 25, currentY);
+        pdf.text(`₹ ${examPrice}`, 160, currentY, { align: 'center' });
+  
+        currentY += 7;
+      }
+  
+      // Exam date & time
+      pdf.text(`Exam Date: ${formData.examDate}`, 25, currentY);
+      currentY += 7;
+      pdf.text(`Time: ${formData.examStartTime} to ${formData.examEndTime}`, 25, currentY);
+      currentY += 10;
+  
+      // Total Amount Box
+      pdf.setFillColor(0, 82, 165);
+      pdf.rect(120, currentY + 10, 70, 15, 'F');
+      pdf.setLineWidth(0.2);
+      pdf.setDrawColor(0, 0, 0);
+      pdf.line(20, currentY + 5, 190, currentY + 5);
+  
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11);
+      pdf.setTextColor(255, 255, 255);
+      pdf.text('Total Amount:', 125, currentY + 20);
+      pdf.setFontSize(12);
+      pdf.text(`INR ${examPrice}`, 180, currentY + 20, { align: 'right' });
+  
+      // Footer with top border
+      pdf.setDrawColor(0, 0, 0);
+      pdf.line(20, 265, 190, 265);
+  
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'italic');
+      pdf.setFontSize(10);
+      pdf.text('Thank you for your payment. This is a computer-generated invoice.', 105, 272, { align: 'center' });
+      pdf.text('For any queries, please contact +91 6360785195 or +91 9482759409', 105, 279, { align: 'center' });
+      pdf.text('You can reach us through the Help section as well.', 105, 286, { align: 'center' });
+  
+      // Save PDF
+      const filename = `Invoice_${formData.candidateName || 'Candidate'}_${paymentDetails.paymentId?.substring(0, 6)}.pdf`;
+      pdf.save(filename);
+  
+      setInvoiceGenerated(true);
+    } catch (error) {
+      console.error('Error generating invoice:', error);
+      setError('Failed to generate invoice. Please try again.');
+    }
+  };
+  
+  
+  
+  
+  
+
   const handleCreateHallticket = async () => {
     if (hallTicketGenerated) {
       setError('Hall ticket has already been generated. Please check your downloads.');
@@ -473,7 +673,7 @@ Privacy Policy
     setError(null);
   
     try {
-      // Prepare form data with photo file
+      // Prepare form data with photo file and payment details
       const formDataToSend = prepareRegistrationData();
   
       // Register candidate with photo compression on server-side
@@ -693,46 +893,57 @@ Privacy Policy
             </div>
           )}
 
-          <div className="text-center">
-            {!paymentCompleted ? (
-              <button
-                onClick={initiatePaymentProcess}
-                className="btn btn-primary btn-lg mb-3"
-                disabled={paymentProcessing || loading}
-              >
-                {paymentProcessing ? (
-                  <span>
-                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                    Processing Payment...
-                  </span>
-                ) : (
-                  'Proceed to Payment'
-                )}
-              </button>
-            ) : (
-              <div>
-                <div className="alert alert-success mb-3">
-                  Payment completed successfully!
-                </div>
-                <button
-                  onClick={handleCreateHallticket}
-                  className="btn btn-success btn-lg"
-                  disabled={loading || hallTicketGenerated}
-                >
-                  {loading ? (
-                    <span>
-                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                      Generating Hall Ticket...
-                    </span>
-                  ) : hallTicketGenerated ? (
-                    'Hall Ticket Already Generated'
-                  ) : (
-                    'Create and Download Hall Ticket'
-                  )}
-                </button>
-              </div>
-            )}
+<div className="text-center">
+  {!paymentCompleted ? (
+    <button
+      onClick={initiatePaymentProcess}
+      className="btn btn-primary btn-lg mb-3"
+      disabled={paymentProcessing || loading}
+    >
+      {paymentProcessing ? (
+        <span>
+          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          Processing Payment...
+        </span>
+      ) : (
+        'Proceed to Payment'
+      )}
+    </button>
+  ) : (
+    <div>
+      <div className="alert alert-success mb-3">
+        Payment completed successfully!
+      </div>
+      {!hallTicketGenerated ? (
+        <div className="text-center mb-3">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Generating hall ticket...</span>
           </div>
+          <p className="mt-2">Generating your hall ticket automatically...</p>
+        </div>
+      ) : (
+        <div className="alert alert-info mb-3">
+          <h5 className="alert-heading">Hall Ticket Generated Successfully!</h5>
+          <p>Your hall ticket has been automatically generated and downloaded.</p>
+        </div>
+      )}
+      <div className="d-flex flex-column flex-md-row justify-content-center gap-3">
+        <button
+          onClick={handleGenerateInvoice}
+          className="btn btn-primary btn-lg"
+          disabled={loading || !paymentDetails}
+        >
+          {invoiceGenerated ? 'Download Invoice Again' : 'Download Invoice'}
+        </button>
+      </div>
+      {!invoiceGenerated && (
+        <div className="alert alert-warning mt-3">
+          <strong>Important:</strong> If you don't download your invoice now, you won't be able to access it in the future. Please make sure to download and save it.
+        </div>
+      )}
+    </div>
+  )}
+</div>
         </div>
       </div>
 

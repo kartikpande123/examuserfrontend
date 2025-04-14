@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Form, 
-  Button, 
-  Container, 
-  Row, 
-  Col, 
-  Card, 
-  Alert, 
+import {
+  Form,
+  Button,
+  Container,
+  Row,
+  Col,
+  Card,
+  Alert,
   Spinner,
   Modal,
   Badge
@@ -18,10 +18,11 @@ import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
 import API_BASE_URL from './ApiConifg';
 import { jsPDF } from "jspdf";
+import logo from "../Images/LOGO.jpg"
 
 const PdfSyllabusRegistration = () => {
   // State management
-  const [stage, setStage] = useState('studentId'); 
+  const [stage, setStage] = useState('studentId');
   const [studentId, setStudentId] = useState('');
   const [existingStudentDetails, setExistingStudentDetails] = useState(null);
   const [selectedSyllabus, setSelectedSyllabus] = useState(null);
@@ -54,11 +55,11 @@ const PdfSyllabusRegistration = () => {
 
   // Indian states list
   const indianStates = [
-    'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 
-    'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 
-    'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 
-    'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 
-    'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 
+    'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+    'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand',
+    'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur',
+    'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
+    'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
     'Uttar Pradesh', 'Uttarakhand', 'West Bengal'
   ];
 
@@ -86,7 +87,7 @@ const PdfSyllabusRegistration = () => {
   // Handle Student ID Verification
   const handleStudentIdVerification = async (e) => {
     e.preventDefault();
-    
+
     // Validate that student ID is exactly 6 digits
     if (!/^\d{6}$/.test(studentId)) {
       setError('Student ID must be exactly 6 digits.');
@@ -96,18 +97,18 @@ const PdfSyllabusRegistration = () => {
       });
       return;
     }
-    
+
     setIsLoading(true);
     setError('');
 
     try {
       // API call to verify student ID
       const response = await axios.get(`${API_BASE_URL}/api/pdf-verify-student/${studentId}`);
-      
+
       if (response.data.exists) {
         // Student exists
         const studentDetails = response.data.studentDetails;
-        
+
         setExistingStudentDetails(studentDetails);
         setFormData({
           name: studentDetails.name,
@@ -121,12 +122,12 @@ const PdfSyllabusRegistration = () => {
 
         // Check for existing purchases
         const purchasesResponse = await axios.get(`${API_BASE_URL}/api/pdf-student-purchases/${studentId}`);
-        
+
         if (purchasesResponse.data.success && purchasesResponse.data.purchases) {
           const hasPurchasedThisSyllabus = purchasesResponse.data.purchases.some(
             purchase => purchase.syllabusId === selectedSyllabus.id
           );
-          
+
           if (hasPurchasedThisSyllabus) {
             toast.info('You have already purchased this syllabus. You can access it from your dashboard.', {
               position: "top-right",
@@ -176,17 +177,17 @@ const PdfSyllabusRegistration = () => {
     try {
       let responseData;
       let newStudentId = existingStudentDetails?.studentId;
-      
+
       if (isNewStudent) {
         // For new students, we're using only 6-digit number for student ID
         const studentData = {
           ...formData
           // Removed studentId generation - backend will handle this
         };
-        
+
         const response = await axios.post(`${API_BASE_URL}/api/pdf-register-student`, studentData);
         responseData = response.data;
-        
+
         if (responseData.success) {
           newStudentId = responseData.studentId;
           setExistingStudentDetails({
@@ -200,12 +201,12 @@ const PdfSyllabusRegistration = () => {
         // Update existing student
         const response = await axios.put(`${API_BASE_URL}/api/pdf-update-student/${existingStudentDetails.studentId}`, formData);
         responseData = response.data;
-        
+
         if (!responseData.success) {
           throw new Error('Failed to update student details');
         }
       }
-      
+
       return newStudentId;
     } catch (error) {
       console.error('Error in student registration/update:', error);
@@ -229,7 +230,7 @@ const PdfSyllabusRegistration = () => {
     try {
       // Update existing student details using the API
       const response = await axios.put(
-        `${API_BASE_URL}/api/pdf-update-student/${existingStudentDetails.studentId}`, 
+        `${API_BASE_URL}/api/pdf-update-student/${existingStudentDetails.studentId}`,
         formData
       );
 
@@ -237,12 +238,12 @@ const PdfSyllabusRegistration = () => {
         setExistingStudentDetails({
           ...response.data.studentDetails
         });
-        
+
         toast.success('Student details updated successfully!', {
           position: "top-right",
           autoClose: 3000,
         });
-        
+
         // Proceed to syllabus details after successful update
         setStage('syllabusDetails');
       } else {
@@ -268,8 +269,8 @@ const PdfSyllabusRegistration = () => {
   // Handle proceed to syllabus details for new registration
   const handleProceedToSyllabusDetails = () => {
     // Validate form
-    if (!formData.name || !formData.age || !formData.gender || 
-        !formData.phoneNo || !formData.district || !formData.state) {
+    if (!formData.name || !formData.age || !formData.gender ||
+      !formData.phoneNo || !formData.district || !formData.state) {
       setError('Please fill in all required fields.');
       toast.error('Please fill in all required fields.', {
         position: "top-right",
@@ -277,7 +278,7 @@ const PdfSyllabusRegistration = () => {
       });
       return;
     }
-    
+
     if (isEditingExistingData) {
       // If editing existing data, update student details first
       handleUpdateStudentDetails();
@@ -300,18 +301,18 @@ const PdfSyllabusRegistration = () => {
       if (price === 0 || price === '0' || price === undefined || price === null || price === '') {
         throw new Error('Cannot create payment order for free syllabus');
       }
-      
+
       const response = await axios.post(`${API_BASE_URL}/api/create-pdf-order`, {
         amount: price,
         notes: {
           syllabusId: selectedSyllabus?.id || '',
           syllabusTitle: selectedSyllabus?.title || '',
-          studentId: isNewStudent ? 
+          studentId: isNewStudent ?
             'new_student' : // We don't have ID yet for new students
             existingStudentDetails?.studentId || ''
         }
       });
-      
+
       if (response.data.success) {
         return response.data.order;
       } else {
@@ -334,7 +335,7 @@ const PdfSyllabusRegistration = () => {
         filePath: selectedSyllabus?.filePath || '',
         userId: isNewStudent ? 'new_student' : existingStudentDetails?.studentId || ''
       });
-      
+
       return response.data;
     } catch (error) {
       console.error('Error verifying payment:', error);
@@ -347,13 +348,13 @@ const PdfSyllabusRegistration = () => {
     try {
       const currentDate = new Date();
       setPurchaseDate(currentDate);
-      
+
       // Calculate expiration date
       const durationDays = selectedSyllabus ? parseInt(selectedSyllabus.duration?.split(' ')[0] || 30) : 30;
       const expiryDate = new Date(currentDate);
       expiryDate.setDate(expiryDate.getDate() + durationDays);
       setExpirationDate(expiryDate);
-      
+
       const response = await axios.post(`${API_BASE_URL}/api/pdf-save-syllabus-purchase`, {
         studentId: studentId,
         syllabusDetails: {
@@ -374,7 +375,7 @@ const PdfSyllabusRegistration = () => {
         },
         purchaseDate: currentDate.toISOString()
       });
-      
+
       return response.data;
     } catch (error) {
       console.error('Error saving purchase details:', error);
@@ -386,12 +387,12 @@ const PdfSyllabusRegistration = () => {
   const generateStudentPDF = (studentDetails) => {
     const doc = new jsPDF();
     const currentDate = purchaseDate || new Date();
-    
+
     // Calculate expiration date
     const durationDays = selectedSyllabus.duration.split(' ')[0];
     const expiry = new Date(currentDate);
     expiry.setDate(expiry.getDate() + parseInt(durationDays));
-    
+
     // ===== 1. Professional Header =====
     doc.setFillColor(10, 35, 66);
     doc.rect(0, 0, 210, 40, 'F');
@@ -399,7 +400,7 @@ const PdfSyllabusRegistration = () => {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(22);
     doc.text("ARN PDF SYLLABUS PURCHASE", 105, 25, { align: 'center' });
-    
+
     // ===== 2. Student ID (Highlighted) =====
     doc.setFillColor(240, 240, 240);
     doc.rect(20, 50, 170, 15, 'F');
@@ -407,26 +408,26 @@ const PdfSyllabusRegistration = () => {
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
     doc.text(`STUDENT ID: ${studentDetails.studentId}`, 105, 60, { align: 'center' });
-    
+
     // ===== 3. Student Details (Clean Layout) =====
     doc.setTextColor(0);
     doc.setFontSize(12);
     doc.setFont("helvetica", "normal");
-    
+
     doc.text(`Name: ${studentDetails.name}`, 20, 85);
     doc.text(`Age: ${studentDetails.age}`, 20, 95);
     doc.text(`Gender: ${studentDetails.gender}`, 20, 105);
     doc.text(`Contact: ${studentDetails.phoneNo}`, 20, 115);
-    
+
     // ===== 4. Syllabus Details (Updated with Expiry Inside) =====
     doc.setDrawColor(200, 200, 200);
     doc.setFillColor(245, 245, 245);
     doc.rect(20, 130, 170, 75, 'FD'); // Increased height to fit expiry
-    
+
     doc.setTextColor(10, 35, 66);
     doc.setFont("helvetica", "bold");
     doc.text("SYLLABUS DETAILS", 30, 140);
-    
+
     doc.setTextColor(0);
     doc.setFont("helvetica", "normal");
     doc.text(`Title: ${selectedSyllabus.title}`, 30, 150);
@@ -434,51 +435,252 @@ const PdfSyllabusRegistration = () => {
     doc.text(`Purchase Date: ${formatDate(currentDate)}`, 30, 170);
 
     // Expiry Date Highlighted in Red (Inside Syllabus Details)
-    doc.setTextColor(180, 0, 0); 
+    doc.setTextColor(180, 0, 0);
     doc.setFont("helvetica", "bold");
     doc.text(`Expires On: ${formatDate(expiry)}`, 30, 180);
-    
+
     // ===== 5. Important Notes Section =====
     doc.setDrawColor(10, 35, 66);
     doc.setFillColor(250, 250, 250);
     doc.roundedRect(20, 205, 170, 65, 3, 3, 'FD');
-    
+
     doc.setTextColor(10, 35, 66);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
     doc.text("IMPORTANT NOTES", 105, 215, { align: 'center' });
-    
+
     doc.setTextColor(60, 60, 60);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    
+
     const notes = [
-        "Once a syllabus is purchased, it is non-refundable under any circumstances.",
-        "With your Student ID, you may purchase any syllabus without completing additional forms.",
-        "Access to the syllabus will be automatically revoked after the expiration date.",
-        "Your Student ID is a 6-digit number. Please keep it for future purchases.",
-        "For technical support or inquiries, please contact our Help Center.",
-        "ARN is not responsible for access issues due to connectivity problems on your end."
+      "Once a syllabus is purchased, it is non-refundable under any circumstances.",
+      "With your Student ID, you may purchase any syllabus without completing additional forms.",
+      "Access to the syllabus will be automatically revoked after the expiration date.",
+      "Your Student ID is a 6-digit number. Please keep it for future purchases.",
+      "For technical support or inquiries, please contact our Help Center.",
+      "ARN is not responsible for access issues due to connectivity problems on your end."
     ];
-    
+
     let yPos = 225;
     notes.forEach((note) => {
-        doc.setFont("helvetica", "bold");
-        doc.text("•", 25, yPos);
-        doc.setFont("helvetica", "normal");
-        doc.text(note, 30, yPos);
-        yPos += 7;
+      doc.setFont("helvetica", "bold");
+      doc.text("•", 25, yPos);
+      doc.setFont("helvetica", "normal");
+      doc.text(note, 30, yPos);
+      yPos += 7;
     });
-    
+
     // ===== 7. Footer =====
     doc.setFillColor(10, 35, 66);
     doc.rect(0, 280, 210, 17, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(9);
     doc.text('© 2025/26 ARN PDF SYLLABUS. All rights reserved.', 105, 288, { align: 'center' });
-    
+
     return doc;
+  };
+
+  // Add this function to generate the invoice PDF
+  // Modified function to handle both paid and free syllabus purchases
+const generateInvoicePDF = () => {
+  try {
+    if (!purchasedStudentDetails || !selectedSyllabus) {
+      toast.error('Purchase details not found. Cannot generate invoice.');
+      return;
+    }
+
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    // Header background
+    pdf.setFillColor(0, 82, 165);
+    pdf.rect(0, 0, 210, 15, 'F');
+
+    // Logo placeholder
+    pdf.setFillColor(230, 230, 230);
+    pdf.rect(20, 20, 40, 40, 'F');
+    pdf.setFontSize(8);
+    pdf.setTextColor(100, 100, 100);
+
+
+    // Logo
+    pdf.addImage(logo, 'JPEG', 20, 20, 40, 40);
+
+    // Company details
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(14);
+    pdf.setTextColor(0, 0, 0);
+    pdf.text('ARN PDF Syllabus Distribution', 70, 30);
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(10);
+    pdf.text('Karnataka India 580011', 70, 37);
+    pdf.text('Phone: +91 6360785195', 70, 44);
+    pdf.text('Email: support@arn.com', 70, 51);
+    pdf.text('GSTIN: 29BXYPN0096F1ZS', 70, 58);
+
+    // Invoice title
+    pdf.setFillColor(245, 245, 245);
+    pdf.roundedRect(65, 65, 80, 15, 3, 3, 'F');
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(22);
+    pdf.setTextColor(0, 82, 165);
+    pdf.text('INVOICE', 105, 77, { align: 'center' });
+
+    // Decorative line
+    pdf.setLineWidth(0.5);
+    pdf.setDrawColor(0, 82, 165);
+    pdf.line(20, 85, 190, 85);
+
+    // Invoice details
+    pdf.setFontSize(11);
+    pdf.setTextColor(0, 0, 0);
+
+    // Check if it's a free syllabus (the payment ID starts with "FREE-")
+    const isFree = paymentId && paymentId.startsWith('FREE-');
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Invoice Number:', 20, 95);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`INV-${paymentId ? paymentId.substring(0, 8) : new Date().getTime().toString().substring(0, 8)}`, 60, 95);
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Date:', 120, 95);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(new Date().toLocaleDateString('en-IN'), 135, 95);
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Payment ID:', 20, 102);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(paymentId || 'FREE', 60, 102);
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Order ID:', 20, 109);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(orderId || 'FREE-ORDER', 60, 109);
+
+    // Customer details
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Bill To:', 120, 102);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(purchasedStudentDetails.name || 'N/A', 120, 109);
+    pdf.text(purchasedStudentDetails.email || 'N/A', 120, 116);
+    pdf.text(purchasedStudentDetails.phoneNo || 'N/A', 120, 123);
+    pdf.text(`${purchasedStudentDetails.district || 'N/A'}, ${purchasedStudentDetails.state || 'N/A'}`, 120, 130);
+
+    // GST Note - only show for paid syllabus
+    if (!isFree && parseFloat(selectedSyllabus.fees) > 0) {
+      pdf.setFont('helvetica', 'bolditalic');
+      pdf.setFontSize(12);
+      pdf.setTextColor(0, 82, 165);
+      pdf.setFillColor(230, 240, 255);
+      pdf.roundedRect(20, 144, 170, 10, 2, 2, 'F');
+      pdf.text('Note: The amount shown below is inclusive of 18% GST.', 25, 151);
+    }
+
+    // Table header
+    pdf.setFillColor(0, 82, 165);
+    pdf.rect(20, 160, 170, 10, 'F');
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(11);
+    pdf.setTextColor(255, 255, 255);
+    pdf.text('Description', 25, 167);
+    pdf.text('Amount (INR)', 160, 167, { align: 'center' });
+
+    // Reset text color and font
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFont('helvetica', 'normal');
+
+    let currentY = 180;
+
+    const syllabusTitle = selectedSyllabus.title;
+    const syllabusPrice = selectedSyllabus.fees?.toString() || '0';
+
+    if (syllabusTitle.length > 30) {
+      const firstLine = syllabusTitle.substring(0, 30);
+      const secondLine = syllabusTitle.substring(30);
+
+      pdf.text(`PDF Syllabus: ${firstLine}`, 25, currentY);
+      pdf.text(`${secondLine}`, 25, currentY + 7);
+      
+      // For free syllabus, show "FREE" instead of price
+      if (isFree || parseFloat(syllabusPrice) === 0) {
+        pdf.text('FREE', 160, currentY, { align: 'center' });
+      } else {
+        pdf.text(`INR ${syllabusPrice}`, 160, currentY, { align: 'center' });
+      }
+
+      currentY += 14;
+    } else {
+      pdf.text(`PDF Syllabus: ${syllabusTitle}`, 25, currentY);
+      
+      // For free syllabus, show "FREE" instead of price
+      if (isFree || parseFloat(syllabusPrice) === 0) {
+        pdf.text('FREE', 160, currentY, { align: 'center' });
+      } else {
+        pdf.text(`INR ${syllabusPrice}`, 160, currentY, { align: 'center' });
+      }
+
+      currentY += 7;
+    }
+
+    // Access details
+    pdf.text(`Access Duration: ${selectedSyllabus.duration}`, 25, currentY);
+    currentY += 7;
+    pdf.text(`Expiry Date: ${formatDate(expirationDate)}`, 25, currentY);
+    currentY += 10;
+
+    // Total Amount Box
+    pdf.setFillColor(0, 82, 165);
+    pdf.rect(120, currentY + 10, 70, 15, 'F');
+    pdf.setLineWidth(0.2);
+    pdf.setDrawColor(0, 0, 0);
+    pdf.line(20, currentY + 5, 190, currentY + 5);
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(11);
+    pdf.setTextColor(255, 255, 255);
+    pdf.text('Total Amount:', 125, currentY + 20);
+    pdf.setFontSize(12);
+    
+    // For free syllabus, show "FREE" instead of price
+    if (isFree || parseFloat(syllabusPrice) === 0) {
+      pdf.text('FREE', 180, currentY + 20, { align: 'right' });
+    } else {
+      pdf.text(`INR ${syllabusPrice}`, 180, currentY + 20, { align: 'right' });
+    }
+
+    // Footer with top border
+    pdf.setDrawColor(0, 0, 0);
+    pdf.line(20, 265, 190, 265);
+
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFont('helvetica', 'italic');
+    pdf.setFontSize(10);
+    pdf.text('Thank you for your purchase. This is a computer-generated invoice.', 105, 272, { align: 'center' });
+    pdf.text('For any queries, please contact ARN support team.', 105, 279, { align: 'center' });
+    pdf.text('You can reach us through the Help section as well.', 105, 286, { align: 'center' });
+
+    // Save PDF
+    const filename = `Invoice_${purchasedStudentDetails.name || 'Student'}_${paymentId ? paymentId.substring(0, 6) : 'FREE'}.pdf`;
+    pdf.save(filename);
+
+    toast.success('Invoice downloaded successfully!', {
+      position: "top-right",
+      autoClose: 3000,
+    });
+  } catch (error) {
+    console.error('Error generating invoice:', error);
+    toast.error('Failed to generate invoice. Please try again.');
+  }
 };
+
+  // Now update the Modal.Body part in the existing Modal
+  // Find the Modal.Body section in your existing code and replace it with this:
 
   // Download PDF receipt
   const downloadPdfReceipt = (studentDetails) => {
@@ -489,54 +691,54 @@ const PdfSyllabusRegistration = () => {
   // Process everything after successful payment
   const processSuccessfulPayment = async (paymentResponse, order) => {
     setIsLoading(true);
-    
+
     try {
       // Step 1: Set payment IDs in state
       setPaymentId(paymentResponse.razorpay_payment_id);
       setOrderId(order.id);
-      
+
       // Step 2: Verify payment with backend
       const paymentVerified = await verifyPayment(paymentResponse);
-      
+
       if (!paymentVerified.success) {
         throw new Error('Payment verification failed');
       }
-      
+
       // Step 3: Register or update student data in DB
       const studentId = await registerOrUpdateStudentAfterPayment();
-      
+
       if (!studentId) {
         throw new Error('Failed to get student ID');
       }
-      
+
       // Step 4: Save purchase details
       const purchaseSaved = await savePurchaseDetails(paymentVerified, studentId);
-      
+
       if (!purchaseSaved.success) {
         throw new Error('Failed to save purchase details');
       }
-      
+
       // Step 5: Prepare student details for receipt and UI
       const studentDetails = {
         ...formData,
         studentId: studentId
       };
-      
+
       // Step 6: Update UI states
       setPurchasedStudentDetails(studentDetails);
       setIsPurchased(true);
       setShowSyllabusDetailsModal(true);
-      
+
       // Step 7: Generate and download PDF receipt
       setTimeout(() => {
         downloadPdfReceipt(studentDetails);
       }, 1000);
-      
+
       toast.success('Syllabus purchased successfully!', {
         position: "top-right",
         autoClose: 3000,
       });
-      
+
       return true;
     } catch (error) {
       console.error('Payment processing error:', error);
@@ -572,7 +774,7 @@ const PdfSyllabusRegistration = () => {
         color: '#17a2b8'
       },
       modal: {
-        ondismiss: function() {
+        ondismiss: function () {
           setIsLoading(false);
           toast.info('Payment cancelled', {
             position: "top-right",
@@ -591,39 +793,39 @@ const PdfSyllabusRegistration = () => {
   const handleSyllabusPurchase = async () => {
     setIsLoading(true);
     setError('');
-    
+
     try {
       // Check if the syllabus is free (handling both undefined and various zero representations)
       const syllabusPrice = selectedSyllabus?.fees;
       const isFree = syllabusPrice === 0 || syllabusPrice === '0' || syllabusPrice === undefined || syllabusPrice === null || syllabusPrice === '';
-      
+
       if (isFree) {
         console.log('Processing free syllabus purchase');
-        
+
         // Generate free order and payment IDs
         const freeOrderId = `FREE-ORDER-${Date.now()}`;
         const freePaymentId = `FREE-${Date.now()}`;
-        
+
         setOrderId(freeOrderId);
         setPaymentId(freePaymentId);
-        
+
         // Step 1: Register or update student data in DB
         const studentId = await registerOrUpdateStudentAfterPayment();
-        
+
         if (!studentId) {
           throw new Error('Failed to get student ID');
         }
-        
+
         // Set current date for purchase
         const currentDate = new Date();
         setPurchaseDate(currentDate);
-        
+
         // Calculate expiration date
         const durationDays = selectedSyllabus?.duration ? parseInt(selectedSyllabus.duration.split(' ')[0]) : 30;
         const expiryDate = new Date(currentDate);
         expiryDate.setDate(expiryDate.getDate() + durationDays);
         setExpirationDate(expiryDate);
-        
+
         // Step 2: Save purchase details with free purchase info
         const purchaseData = {
           studentId: studentId,
@@ -645,45 +847,45 @@ const PdfSyllabusRegistration = () => {
           },
           purchaseDate: currentDate.toISOString()
         };
-        
+
         console.log('Sending purchase data:', purchaseData);
-        
+
         const purchaseResponse = await axios.post(`${API_BASE_URL}/api/pdf-save-syllabus-purchase`, purchaseData);
-        
+
         if (!purchaseResponse.data || !purchaseResponse.data.success) {
           console.error('Purchase save response:', purchaseResponse.data);
           throw new Error(purchaseResponse.data?.message || 'Failed to save purchase details');
         }
-        
+
         // Step 3: Prepare student details for receipt and UI
         const studentDetails = {
           ...formData,
           studentId: studentId
         };
-        
+
         // Step 4: Update UI states
         setPurchasedStudentDetails(studentDetails);
         setIsPurchased(true);
         setShowSyllabusDetailsModal(true);
-        
+
         // Step 5: Generate and download PDF receipt
         setTimeout(() => {
           downloadPdfReceipt(studentDetails);
         }, 1000);
-        
+
         toast.success('Free syllabus added to your account!', {
           position: "top-right",
           autoClose: 3000,
         });
-        
+
       } else {
         // For paid syllabus, continue with the existing Razorpay flow
         console.log('Processing paid syllabus purchase, price:', syllabusPrice);
-        
+
         // Create Razorpay order
         const order = await createOrder();
         setOrderId(order.id);
-        
+
         // Open Razorpay payment popup
         await handleRazorpayPayment(order);
       }
@@ -739,9 +941,9 @@ const PdfSyllabusRegistration = () => {
                           Enter your 6-digit ID to quickly proceed with your purchase
                         </Form.Text>
                       </Form.Group>
-                      <Button 
-                        variant="info" 
-                        type="submit" 
+                      <Button
+                        variant="info"
+                        type="submit"
                         className="w-100 py-2 mb-3 fw-bold text-white"
                         disabled={isLoading}
                       >
@@ -749,8 +951,8 @@ const PdfSyllabusRegistration = () => {
                       </Button>
                     </Form>
                     <div className="text-center mt-4">
-                      <Button 
-                        variant="gradient-info" 
+                      <Button
+                        variant="gradient-info"
                         className="register-new-btn w-100 py-3 text-white"
                         onClick={() => {
                           setStage('newRegistration');
@@ -791,7 +993,7 @@ const PdfSyllabusRegistration = () => {
                   </Card.Header>
                   <Card.Body className="p-4">
                     {error && <Alert variant="danger">{error}</Alert>}
-                    
+
                     {isEditingExistingData && (
                       <Alert variant="info" className="mb-4">
                         <div className="d-flex align-items-center">
@@ -803,7 +1005,7 @@ const PdfSyllabusRegistration = () => {
                         </div>
                       </Alert>
                     )}
-                    
+
                     <Form onSubmit={(e) => e.preventDefault()}>
                       <Row>
                         <Form.Group as={Col} md={6} className="mb-3">
@@ -910,26 +1112,26 @@ const PdfSyllabusRegistration = () => {
                       </Row>
 
                       <div className="d-grid gap-2 mt-4">
-                        <Button 
-                          variant="info" 
+                        <Button
+                          variant="info"
                           onClick={handleProceedToSyllabusDetails}
                           className="py-3 fw-bold text-white"
                           disabled={
                             isLoading ||
-                            !formData.name || 
-                            !formData.age || 
-                            !formData.gender || 
-                            !formData.phoneNo || 
-                            !formData.district || 
+                            !formData.name ||
+                            !formData.age ||
+                            !formData.gender ||
+                            !formData.phoneNo ||
+                            !formData.district ||
                             !formData.state
                           }
                         >
                           {isLoading ? <Spinner animation="border" size="sm" /> : 'Proceed to Syllabus Details'}
                         </Button>
-                        
+
                         {isEditingExistingData && (
-                          <Button 
-                            variant="outline-secondary" 
+                          <Button
+                            variant="outline-secondary"
                             onClick={handleProceedWithExistingData}
                             className="py-2"
                           >
@@ -961,7 +1163,7 @@ const PdfSyllabusRegistration = () => {
                         <Col md={6}><strong>Category:</strong> {selectedSyllabus?.category || 'General'}</Col>
                       </Row>
                       <Row className="mb-3">
-                      <Col md={6}><strong>Price:</strong> INR {selectedSyllabus?.fees || '0'}</Col>
+                        <Col md={6}><strong>Price:</strong> INR {selectedSyllabus?.fees || '0'}</Col>
                         <Col md={6}><strong>Validity:</strong> {selectedSyllabus?.duration || '30 Days'}</Col>
                       </Row>
                       <Row className="mb-3">
@@ -979,8 +1181,8 @@ const PdfSyllabusRegistration = () => {
                       </Row>
                     </div>
                     <div className="d-grid gap-2">
-                      <Button 
-                        variant="success" 
+                      <Button
+                        variant="success"
                         className="py-3 fw-bold"
                         onClick={handleSyllabusPurchase}
                         disabled={isLoading || isPurchased}
@@ -988,8 +1190,8 @@ const PdfSyllabusRegistration = () => {
                         {isLoading ? <Spinner animation="border" size="sm" /> : 'Confirm Purchase'}
                       </Button>
                       {isPurchased && (
-                        <Button 
-                          variant="info" 
+                        <Button
+                          variant="info"
                           className="py-2 mt-3 text-white"
                           onClick={handleBackToHome}
                         >
@@ -1027,9 +1229,22 @@ const PdfSyllabusRegistration = () => {
               <p><strong>Student ID:</strong> {purchasedStudentDetails.studentId}</p>
               <p><strong>Payment ID:</strong> {paymentId}</p>
               <p><strong>Valid Until:</strong> {expirationDate && formatDate(expirationDate)}</p>
+
               <div className="alert alert-info mt-3">
                 <i className="fas fa-download me-2"></i> Your purchase receipt is being downloaded...
               </div>
+
+              <div className="alert alert-warning mt-3">
+                <p><strong>Important:</strong> If you don't download your invoice now, you won't be able to access it in the future. Please make sure to download and save it.</p>
+                <Button
+                  variant="warning"
+                  className="w-100 mt-2"
+                  onClick={generateInvoicePDF}
+                >
+                  <i className="fas fa-file-invoice me-2"></i> Download Invoice
+                </Button>
+              </div>
+
               <div className="alert alert-success mt-3">
                 <i className="fas fa-check-circle me-2"></i> You can now access this PDF syllabus in your dashboard.
               </div>
