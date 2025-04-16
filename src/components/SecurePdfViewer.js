@@ -13,6 +13,7 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isMobile, setIsMobile] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const viewerRef = useRef(null);
   const observerRef = useRef(null);
   
@@ -238,7 +239,6 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
     
     observerRef.current = new MutationObserver(() => {
       // Use requestAnimationFrame to avoid blocking the main thread
-      // and to ensure DOM is in a stable state when we modify it
       requestAnimationFrame(() => {
         safeRemoveElements();
       });
@@ -274,7 +274,7 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
     };
   }, []);
 
-  // Fetch syllabus data - keeping this separate from DOM manipulation logic
+  // Fetch syllabus data
   useEffect(() => {
     const fetchSyllabus = async () => {
       try {
@@ -289,8 +289,7 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
         const response = await fetch(`${API_BASE_URL}/api/pdf-syllabi`, {
           headers: {
             'Accept': 'application/json',
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
+            'Cache-Control': 'no-cache'
           }
         });
         
@@ -322,11 +321,9 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
           throw new Error('This syllabus file is currently unavailable');
         }
         
-        // For mobile devices, add a cache-busting query parameter
-        // This helps avoid 500 errors due to caching issues
-        const url = foundSyllabus.fileUrl;
-        const cacheBuster = isMobile ? `?t=${Date.now()}` : '';
-        setPdfUrl(`${url}${cacheBuster}`);
+        // Important: DO NOT add query parameters to Firebase Storage URLs
+        // They already have authentication tokens that mustn't be modified
+        setPdfUrl(foundSyllabus.fileUrl);
         
         setLoading(false);
       } catch (err) {
@@ -337,11 +334,27 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
     };
 
     fetchSyllabus();
-  }, [selectedSyllabus, isMobile]);
+  }, [selectedSyllabus, retryCount]);
 
   const handleViewerError = (error) => {
     console.error('PDF viewer error:', error);
-    setError('Error displaying PDF. Please try again or switch to desktop mode.');
+    
+    // If we're on mobile and haven't retried yet, try once more
+    if (isMobile && retryCount < 2) {
+      setError('Retrying to load the document...');
+      // Increment retry count to trigger useEffect
+      setRetryCount(prevCount => prevCount + 1);
+      setTimeout(() => {
+        // This forces a refresh of the viewer with a delay
+        setPdfUrl(null);
+        setTimeout(() => {
+          // Re-fetch the syllabus data
+          setLoading(true);
+        }, 500);
+      }, 1000);
+    } else {
+      setError('Error displaying PDF. Please try again or switch to desktop mode.');
+    }
   };
 
   // Custom watermark component
@@ -364,6 +377,21 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
       fontWeight: 'bold'
     }}>
       ARN Private Exam - {studentName}
+    </div>
+  );
+
+  // Alternate mobile view component as a backup option
+  const MobileBackupView = () => (
+    <div className="alert alert-warning">
+      <h4>Mobile Viewing Issue</h4>
+      <p>We're experiencing an issue displaying this document on your mobile device.</p>
+      <button 
+        className="btn btn-primary mt-2"
+        onClick={() => setRetryCount(prevCount => prevCount + 1)}
+      >
+        Retry Loading
+      </button>
+      <p className="mt-3 small">Tip: For best results, try viewing in landscape orientation or on a desktop device.</p>
     </div>
   );
 
@@ -410,21 +438,28 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
                   onError={handleViewerError}
                   defaultScale={isMobile ? SpecialZoomLevel.PageFit : 1.5}
                   initialPage={0}
+                  // Important mobile settings to improve compatibility
                   renderMode="canvas"
+                  // Don't use withCredentials with Firebase storage URLs
                   withCredentials={false}
+                  // Disable caching for mobile to prevent stale data
+                  cachePageRender={!isMobile}
                 />
               </Worker>
               
-              {/* Mobile help text */}
+              {/* Mobile tips */}
               {isMobile && (
                 <div className="alert alert-info mt-2" style={{fontSize: '0.8rem'}}>
-                  If you experience any issues viewing this document, try rotating your device to landscape mode.
+                  For best viewing experience, please rotate your device to landscape mode.
                 </div>
               )}
             </div>
           ) : (
             <div className="alert alert-warning">No PDF available</div>
           )}
+          
+          {/* Show mobile backup button after multiple failures */}
+          {isMobile && retryCount >= 2 && error && <MobileBackupView />}
         </div>
 
         <div className="card-footer text-center">
