@@ -13,19 +13,13 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isMobile, setIsMobile] = useState(false);
-  const [viewerKey, setViewerKey] = useState(Date.now()); // Add key for forcing re-render
   const viewerRef = useRef(null);
-
+  const observerRef = useRef(null);
+  
   // Check if the device is mobile
   useEffect(() => {
     const checkIfMobile = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
-      
-      // Force viewer to re-render when switching between mobile and desktop
-      if (mobile !== isMobile) {
-        setViewerKey(Date.now());
-      }
+      setIsMobile(window.innerWidth < 768);
     };
 
     // Initial check
@@ -38,7 +32,7 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
     return () => {
       window.removeEventListener('resize', checkIfMobile);
     };
-  }, [isMobile]);
+  }, []);
 
   // PDF Viewer Plugin with completely disabled download, print, and related options
   const defaultLayoutPluginInstance = defaultLayoutPlugin({
@@ -102,165 +96,12 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
     </Toolbar>
   );
 
+  // Security event listeners and CSS protection
   useEffect(() => {
-    const fetchSyllabus = async () => {
-      if (!selectedSyllabus) {
-        setError('No syllabus selected');
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-
-        // Fetch all syllabi using the new API endpoint
-        const response = await fetch(`${API_BASE_URL}/api/pdf-syllabi`);
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch syllabi: ${response.status}`);
-        }
-        
-        const allSyllabi = await response.json();
-        
-        // Find the selected syllabus in the data
-        let foundSyllabus = null;
-        
-        // Look through all categories to find the matching syllabus
-        Object.keys(allSyllabi).forEach(category => {
-          Object.keys(allSyllabi[category]).forEach(title => {
-            // Match by title and category
-            if (
-              title === selectedSyllabus.syllabusTitle && 
-              category === selectedSyllabus.syllabusCategory
-            ) {
-              foundSyllabus = allSyllabi[category][title];
-            }
-          });
-        });
-        
-        if (!foundSyllabus) {
-          throw new Error('Selected syllabus not found in available syllabi');
-        }
-        
-        if (foundSyllabus.fileError) {
-          throw new Error('This syllabus file is currently unavailable');
-        }
-        
-        // Use the fileUrl from the found syllabus
-        setPdfUrl(foundSyllabus.fileUrl);
-        setLoading(false);
-      } catch (err) {
-        console.error('PDF setup error:', err);
-        setError(err.message || 'Failed to load syllabus. Please try again.');
-        setLoading(false);
-      }
-    };
-
-    fetchSyllabus();
-
-    // Prevent context menu (right-click)
-    const handleContextMenu = (e) => {
-      e.preventDefault();
-      return false;
-    };
-
-    // Block keyboard shortcuts for printing, saving, etc.
-    const handleKeyDown = (e) => {
-      // Block Ctrl/Cmd + P (print)
-      // Block Ctrl/Cmd + S (save)
-      // Block Ctrl/Cmd + Shift + S (save as)
-      // Block Ctrl/Cmd + C (copy)
-      // Block F12 (developer tools)
-      if (
-        ((e.ctrlKey || e.metaKey) && 
-          (e.key === 'p' || e.key === 's' || e.key === 'c' || 
-          (e.shiftKey && e.key === 'S'))
-        ) || 
-        e.key === 'F12' || 
-        e.key === 'PrintScreen'
-      ) {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
-      }
-    };
-
-    // Apply event listeners
-    document.addEventListener('contextmenu', handleContextMenu, true);
-    document.addEventListener('keydown', handleKeyDown, true);
-    
-    // Use MutationObserver to continuously remove unwanted buttons
-    const removeUnwantedButtons = () => {
-      const selectors = [
-        '[data-testid*="download"]',
-        '[aria-label*="download"]',
-        '[title*="download"]',
-        '[data-testid*="print"]',
-        '[aria-label*="print"]',
-        '[title*="print"]',
-        '[data-testid*="save"]',
-        '[aria-label*="save"]',
-        '[title*="save"]',
-        '[data-testid*="open"]',
-        '[aria-label*="open"]',
-        '[title*="open"]',
-        '[data-testid*="upload"]',
-        '[aria-label*="upload"]',
-        '[title*="upload"]',
-        '.rpv-core__text-layer', // Prevent text selection
-        'button:contains("Download")',
-        'button:contains("Print")',
-        'button:contains("Save")',
-        'button:contains("Open")'
-      ];
-      
-      selectors.forEach(selector => {
-        try {
-          const elements = document.querySelectorAll(selector);
-          elements.forEach(el => {
-            if (el && el.parentNode) {
-              el.parentNode.removeChild(el);
-            }
-          });
-        } catch (e) {
-          // Silent fail - some selectors might not be valid
-        }
-      });
-    };
-
-    // Run initially
-    removeUnwantedButtons();
-    
-    // Set up observer for dynamically loaded elements
-    const observer = new MutationObserver(() => {
-      removeUnwantedButtons();
-    });
-    
-    observer.observe(document.body, { 
-      childList: true, 
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['class', 'style', 'id']
-    });
-
-    // Anti-iframe protection - prevent embedding in other sites
-    if (window.self !== window.top) {
-      document.body.innerHTML = 'Access denied';
-    }
-
-    // Cleanup
-    return () => {
-      document.removeEventListener('contextmenu', handleContextMenu, true);
-      document.removeEventListener('keydown', handleKeyDown, true);
-      observer.disconnect();
-    };
-  }, [selectedSyllabus]);
-
-  // Additional CSS to block UI elements
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.type = 'text/css';
-    style.innerHTML = `
+    // Apply CSS hiding for better security
+    const styleElement = document.createElement('style');
+    styleElement.type = 'text/css';
+    styleElement.innerHTML = `
       /* Hide all download/print/save buttons */
       [data-testid*="download"],
       [aria-label*="download"],
@@ -285,12 +126,7 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
         visibility: hidden !important;
         opacity: 0 !important;
         position: absolute !important;
-        top: -9999px !important;
-        left: -9999px !important;
-        width: 0 !important;
-        height: 0 !important;
-        overflow: hidden !important;
-        z-index: -1 !important;
+        pointer-events: none !important;
       }
       
       /* Disable text selection */
@@ -298,8 +134,6 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
         pointer-events: none !important;
         user-select: none !important;
         -webkit-user-select: none !important;
-        -moz-user-select: none !important;
-        -ms-user-select: none !important;
       }
       
       /* Prevent cursor from showing select behavior */
@@ -311,34 +145,206 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
       .rpv-core__viewer * {
         user-select: none !important;
         -webkit-user-select: none !important;
-        -moz-user-select: none !important;
-        -ms-user-select: none !important;
       }
       
-      /* Mobile specific styles */
+      /* Mobile optimization */
       @media (max-width: 767px) {
+        .rpv-core__viewer canvas {
+          width: 100% !important;
+          height: auto !important;
+          max-width: 100vw !important;
+        }
+        
         .rpv-core__minimal-button {
           padding: 8px !important;
         }
-        
-        .rpv-core__viewer canvas {
-          max-width: 100% !important;
-        }
       }
     `;
-    document.head.appendChild(style);
+    document.head.appendChild(styleElement);
+
+    // Prevent context menu (right-click)
+    const handleContextMenu = (e) => {
+      e.preventDefault();
+      return false;
+    };
+
+    // Block keyboard shortcuts for printing, saving, etc.
+    const handleKeyDown = (e) => {
+      if (
+        ((e.ctrlKey || e.metaKey) && 
+          (e.key === 'p' || e.key === 's' || e.key === 'c' || 
+          (e.shiftKey && e.key === 'S'))
+        ) || 
+        e.key === 'F12' || 
+        e.key === 'PrintScreen'
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    };
+
+    // Add event listeners
+    document.addEventListener('contextmenu', handleContextMenu, true);
+    document.addEventListener('keydown', handleKeyDown, true);
+
+    // Use a safer approach to hide unwanted buttons
+    const safeRemoveElements = () => {
+      const selectors = [
+        '[data-testid*="download"]',
+        '[aria-label*="download"]',
+        '[title*="download"]',
+        '[data-testid*="print"]',
+        '[aria-label*="print"]',
+        '[title*="print"]',
+        '[data-testid*="save"]',
+        '[aria-label*="save"]',
+        '[title*="save"]',
+        '[data-testid*="open"]',
+        '[aria-label*="open"]',
+        '[title*="open"]',
+        '[data-testid*="upload"]',
+        '[aria-label*="upload"]',
+        '[title*="upload"]'
+      ];
+      
+      selectors.forEach(selector => {
+        try {
+          const elements = document.querySelectorAll(selector);
+          elements.forEach(el => {
+            // Instead of removing, hide with style (safer for DOM operations)
+            if (el) {
+              el.style.display = 'none';
+              el.style.visibility = 'hidden';
+              el.style.opacity = '0';
+              el.style.pointerEvents = 'none';
+              el.setAttribute('aria-hidden', 'true');
+              el.classList.add('hidden-secure-element');
+            }
+          });
+        } catch (e) {
+          // Silent fail for selector issues
+        }
+      });
+    };
+
+    // Initial removal
+    safeRemoveElements();
     
+    // Set up a safer observer that doesn't cause DOM conflicts
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+    
+    observerRef.current = new MutationObserver(() => {
+      // Use requestAnimationFrame to avoid blocking the main thread
+      // and to ensure DOM is in a stable state when we modify it
+      requestAnimationFrame(() => {
+        safeRemoveElements();
+      });
+    });
+    
+    // Start observing with a more focused approach
+    observerRef.current.observe(document.body, { 
+      childList: true, 
+      subtree: true,
+      attributes: false // Reduce processing load
+    });
+
+    // Anti-iframe protection
+    if (window.self !== window.top) {
+      document.body.innerHTML = 'Access denied';
+    }
+
+    // Cleanup function
     return () => {
-      document.head.removeChild(style);
+      document.removeEventListener('contextmenu', handleContextMenu, true);
+      document.removeEventListener('keydown', handleKeyDown, true);
+      
+      // Safely disconnect observer
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+        observerRef.current = null;
+      }
+      
+      // Remove the style element
+      if (document.head.contains(styleElement)) {
+        document.head.removeChild(styleElement);
+      }
     };
   }, []);
 
-  const handleError = (error) => {
+  // Fetch syllabus data - keeping this separate from DOM manipulation logic
+  useEffect(() => {
+    const fetchSyllabus = async () => {
+      try {
+        setLoading(true);
+        setError('');
+
+        if (!selectedSyllabus) {
+          throw new Error('No syllabus selected');
+        }
+
+        // Fetch all syllabi
+        const response = await fetch(`${API_BASE_URL}/api/pdf-syllabi`, {
+          headers: {
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch syllabi: ${response.status}`);
+        }
+        
+        const allSyllabi = await response.json();
+        
+        // Find the selected syllabus
+        let foundSyllabus = null;
+        
+        Object.keys(allSyllabi).forEach(category => {
+          Object.keys(allSyllabi[category]).forEach(title => {
+            if (
+              title === selectedSyllabus.syllabusTitle && 
+              category === selectedSyllabus.syllabusCategory
+            ) {
+              foundSyllabus = allSyllabi[category][title];
+            }
+          });
+        });
+        
+        if (!foundSyllabus) {
+          throw new Error('Selected syllabus not found');
+        }
+        
+        if (foundSyllabus.fileError) {
+          throw new Error('This syllabus file is currently unavailable');
+        }
+        
+        // For mobile devices, add a cache-busting query parameter
+        // This helps avoid 500 errors due to caching issues
+        const url = foundSyllabus.fileUrl;
+        const cacheBuster = isMobile ? `?t=${Date.now()}` : '';
+        setPdfUrl(`${url}${cacheBuster}`);
+        
+        setLoading(false);
+      } catch (err) {
+        console.error('PDF setup error:', err);
+        setError(err.message || 'Failed to load syllabus');
+        setLoading(false);
+      }
+    };
+
+    fetchSyllabus();
+  }, [selectedSyllabus, isMobile]);
+
+  const handleViewerError = (error) => {
     console.error('PDF viewer error:', error);
-    setError('Error displaying PDF. Please try again later.');
+    setError('Error displaying PDF. Please try again or switch to desktop mode.');
   };
 
-  // Custom watermark component with student name
+  // Custom watermark component
   const Watermark = () => (
     <div style={{
       position: 'absolute',
@@ -353,7 +359,7 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
       justifyContent: 'center',
       opacity: 0.12,
       transform: 'rotate(-20deg)',
-      fontSize: isMobile ? '24px' : '48px', // Smaller font on mobile
+      fontSize: isMobile ? '24px' : '48px',
       color: '#000000',
       fontWeight: 'bold'
     }}>
@@ -399,24 +405,22 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
               <Watermark />
               <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
                 <Viewer
-                  key={viewerKey} // Force re-render when switching device types
                   fileUrl={pdfUrl}
                   plugins={[defaultLayoutPluginInstance]}
-                  onError={handleError}
+                  onError={handleViewerError}
                   defaultScale={isMobile ? SpecialZoomLevel.PageFit : 1.5}
                   initialPage={0}
-                  textSelectionEnabled={false}
                   renderMode="canvas"
-                  canvasLayerRendered={() => {
-                    // Add additional canvas protection
-                    const canvases = document.querySelectorAll('.rpv-core__canvas-layer canvas');
-                    canvases.forEach(canvas => {
-                      canvas.style.pointerEvents = 'none';
-                      canvas.setAttribute('aria-readonly', 'true');
-                    });
-                  }}
+                  withCredentials={false}
                 />
               </Worker>
+              
+              {/* Mobile help text */}
+              {isMobile && (
+                <div className="alert alert-info mt-2" style={{fontSize: '0.8rem'}}>
+                  If you experience any issues viewing this document, try rotating your device to landscape mode.
+                </div>
+              )}
             </div>
           ) : (
             <div className="alert alert-warning">No PDF available</div>
