@@ -13,12 +13,19 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isMobile, setIsMobile] = useState(false);
+  const [viewerKey, setViewerKey] = useState(Date.now()); // Add key for forcing re-render
   const viewerRef = useRef(null);
 
   // Check if the device is mobile
   useEffect(() => {
     const checkIfMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      
+      // Force viewer to re-render when switching between mobile and desktop
+      if (mobile !== isMobile) {
+        setViewerKey(Date.now());
+      }
     };
 
     // Initial check
@@ -31,17 +38,17 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
     return () => {
       window.removeEventListener('resize', checkIfMobile);
     };
-  }, []);
+  }, [isMobile]);
 
   // PDF Viewer Plugin with completely disabled download, print, and related options
   const defaultLayoutPluginInstance = defaultLayoutPlugin({
     toolbarPlugin: {
       fullScreenPlugin: {
         onEnterFullScreen: (zoom) => {
-          zoom(isMobile ? 1 : 1.5); // Adjust zoom based on device type
+          zoom(isMobile ? SpecialZoomLevel.PageFit : 1.5);
         },
         onExitFullScreen: (zoom) => {
-          zoom(isMobile ? 1 : 1.5); // Maintain appropriate zoom when exiting full screen
+          zoom(isMobile ? SpecialZoomLevel.PageFit : 1.5);
         },
       },
       // Completely disable these features at plugin level
@@ -97,12 +104,14 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
 
   useEffect(() => {
     const fetchSyllabus = async () => {
+      if (!selectedSyllabus) {
+        setError('No syllabus selected');
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
-
-        if (!selectedSyllabus) {
-          throw new Error('No syllabus selected');
-        }
 
         // Fetch all syllabi using the new API endpoint
         const response = await fetch(`${API_BASE_URL}/api/pdf-syllabi`);
@@ -119,7 +128,7 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
         // Look through all categories to find the matching syllabus
         Object.keys(allSyllabi).forEach(category => {
           Object.keys(allSyllabi[category]).forEach(title => {
-            // Match by title and category (adjust this based on how you identify syllabi)
+            // Match by title and category
             if (
               title === selectedSyllabus.syllabusTitle && 
               category === selectedSyllabus.syllabusCategory
@@ -139,7 +148,6 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
         
         // Use the fileUrl from the found syllabus
         setPdfUrl(foundSyllabus.fileUrl);
-        
         setLoading(false);
       } catch (err) {
         console.error('PDF setup error:', err);
@@ -306,6 +314,17 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
         -moz-user-select: none !important;
         -ms-user-select: none !important;
       }
+      
+      /* Mobile specific styles */
+      @media (max-width: 767px) {
+        .rpv-core__minimal-button {
+          padding: 8px !important;
+        }
+        
+        .rpv-core__viewer canvas {
+          max-width: 100% !important;
+        }
+      }
     `;
     document.head.appendChild(style);
     
@@ -380,21 +399,21 @@ export default function SecurePdfViewer({ selectedSyllabus, studentName }) {
               <Watermark />
               <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
                 <Viewer
+                  key={viewerKey} // Force re-render when switching device types
                   fileUrl={pdfUrl}
                   plugins={[defaultLayoutPluginInstance]}
                   onError={handleError}
-                  defaultScale={isMobile ? SpecialZoomLevel.PageFit : 1.5} // PageFit for mobile, 150% for desktop
+                  defaultScale={isMobile ? SpecialZoomLevel.PageFit : 1.5}
                   initialPage={0}
                   textSelectionEnabled={false}
-                  canvasList={{
-                    onRenderSuccess: () => {
-                      // Add additional canvas protection
-                      const canvases = document.querySelectorAll('.rpv-core__canvas-layer canvas');
-                      canvases.forEach(canvas => {
-                        canvas.style.pointerEvents = 'none';
-                        canvas.setAttribute('aria-readonly', 'true');
-                      });
-                    }
+                  renderMode="canvas"
+                  canvasLayerRendered={() => {
+                    // Add additional canvas protection
+                    const canvases = document.querySelectorAll('.rpv-core__canvas-layer canvas');
+                    canvases.forEach(canvas => {
+                      canvas.style.pointerEvents = 'none';
+                      canvas.setAttribute('aria-readonly', 'true');
+                    });
                   }}
                 />
               </Worker>
