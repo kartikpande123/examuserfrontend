@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import API_BASE_URL from "./ApiConifg";
+import API_BASE_URL from "./ApiConfig";
 
 const Toast = ({ message, type, onClose }) => {
   React.useEffect(() => {

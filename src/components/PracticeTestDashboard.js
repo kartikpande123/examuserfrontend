@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Form, Dropdown, Container, Button } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import API_BASE_URL from './ApiConifg';
+import API_BASE_URL from './ApiConfig';
 
 const PracticeTestDashboard = () => {
   const [practiceTests, setPracticeTests] = useState({});

@@ -4,7 +4,7 @@ import moment from 'moment';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Modal from 'react-bootstrap/Modal';
 import "./MainExam.css"
-import API_BASE_URL from "./ApiConifg"
+import API_BASE_URL from "./ApiConfig"
 import jsPDF from 'jspdf';
 
 

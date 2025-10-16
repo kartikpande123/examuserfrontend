@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, ExternalLink, Download } from 'lucide-react';
-import API_BASE_URL from "./ApiConifg"
+import API_BASE_URL from "./ApiConfig"
 
 
-const SyllabusList = () => {
+const UserSyllabusList = () => {
   const [syllabusData, setSyllabusData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -129,4 +129,4 @@ const SyllabusList = () => {
   );
 };
 
-export default SyllabusList;
+export default UserSyllabusList;

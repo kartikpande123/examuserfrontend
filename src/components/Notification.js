@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import API_BASE_URL from "./ApiConifg"
+import API_BASE_URL from "./ApiConfig"
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);

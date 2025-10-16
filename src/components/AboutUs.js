@@ -1,8 +1,30 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { MapPin, Phone, Mail, Target, Eye, Award, Users, Clock } from 'lucide-react';
-import {Link} from "react-router-dom"
 
 const AboutUs = () => {
+  const [keySequence, setKeySequence] = useState('');
+
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      setKeySequence((prev) => {
+        const newSequence = (prev + e.key).slice(-5); // Keep last 5 characters
+        
+        if (newSequence === 'admin') {
+          window.location.href = '/adminlogin';
+          return '';
+        }
+        
+        return newSequence;
+      });
+    };
+
+    window.addEventListener('keypress', handleKeyPress);
+
+    return () => {
+      window.removeEventListener('keypress', handleKeyPress);
+    };
+  }, []);
+
   return (
     <div className="min-vh-100 bg-light">
       {/* Hero Section */}
@@ -126,25 +148,25 @@ const AboutUs = () => {
         </div>
 
         <footer className="footer mt-5 bg-light py-3">
-                <div className="container text-center">
-                  <p className="mb-2">
-                    &copy; 2025/2026 Karnataka Ayan Wholesale Supply Enterprises. All Rights Reserved.
-                  </p>
-                  <ul className="list-inline mb-0">
-                    <li className="list-inline-item">
-                      <Link to="/termscondition" className="footer-link">Terms and Conditions</Link>
-                    </li>
-                    <li className="list-inline-item">|</li>
-                    <li className="list-inline-item">
-                      <Link to="/privacypolicy" className="footer-link">Privacy Policy</Link>
-                    </li>
-                    <li className="list-inline-item">|</li>
-                    <li className="list-inline-item">
-                      <Link to="/cancellationplicy" className="footer-link">Cancellation Policy</Link>
-                    </li>
-                  </ul>
-                </div>
-              </footer>
+          <div className="container text-center">
+            <p className="mb-2">
+              &copy; 2025/2026 Karnataka Ayan Wholesale Supply Enterprises. All Rights Reserved.
+            </p>
+            <ul className="list-inline mb-0">
+              <li className="list-inline-item">
+                <a href="/termscondition" className="footer-link">Terms and Conditions</a>
+              </li>
+              <li className="list-inline-item">|</li>
+              <li className="list-inline-item">
+                <a href="/privacypolicy" className="footer-link">Privacy Policy</a>
+              </li>
+              <li className="list-inline-item">|</li>
+              <li className="list-inline-item">
+                <a href="/cancellationplicy" className="footer-link">Cancellation Policy</a>
+              </li>
+            </ul>
+          </div>
+        </footer>
       </div>
     </div>
   );

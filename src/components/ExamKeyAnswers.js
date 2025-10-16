@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { FileText, ExternalLink, Download } from "lucide-react";
-import API_BASE_URL from "./ApiConifg"
+import API_BASE_URL from "./ApiConfig"
 
 const ExamKeyAnswer = () => {
   const [qaData, setQaData] = useState([]);

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Modal from 'react-bootstrap/Modal';
-import API_BASE_URL from './ApiConifg'; // Assume you have this configured
+import API_BASE_URL from './ApiConfig'; // Assume you have this configured
 
 const PracticeExamEntry = () => {
   const [studentId, setStudentId] = useState('');

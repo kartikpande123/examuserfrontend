@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import SecurePdfViewer from './SecurePdfViewer';
-import API_BASE_URL from './ApiConifg';
+import API_BASE_URL from './ApiConfig';
 
 export default function PdfSyllabusEntry() {
   const [studentId, setStudentId] = useState('');

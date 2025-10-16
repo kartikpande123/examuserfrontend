@@ -17,7 +17,7 @@ import jsPDF from 'jspdf';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import API_BASE_URL from './ApiConifg';
+import API_BASE_URL from './ApiConfig';
 import './ExamRegistration.css';
 import logo from "../Images/LOGO.jpg"
 

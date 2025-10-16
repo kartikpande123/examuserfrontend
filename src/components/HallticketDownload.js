@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { jsPDF } from 'jspdf';
 import image from "../Images/LOGO.jpg";
-import API_BASE_URL from "./ApiConifg";
+import API_BASE_URL from "./ApiConfig";
 
 const RegenerateHallTicket = () => {
   const [regId, setRegId] = useState('');

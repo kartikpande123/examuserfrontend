@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css';
 import { Search } from 'lucide-react';
-import API_BASE_URL from "./ApiConifg";
+import API_BASE_URL from "./ApiConfig";
 
 const ExamResults = () => {
   const [results, setResults] = useState(null);
@@ -17,15 +16,18 @@ const ExamResults = () => {
       try {
         const response = await fetch(`${API_BASE_URL}/api/all-exam-results`);
         const data = await response.json();
-        if (data.success) {
+        if (data.success && data.data && data.data.length > 0) {
           const examsList = data.data.map(exam => ({
             examId: exam.examId,
             totalCandidates: exam.candidates.length
           }));
           setExams(examsList);
+        } else {
+          setExams([]);
         }
       } catch (err) {
-        setError('Failed to fetch exam list');
+        console.error('Failed to fetch exam list:', err);
+        setExams([]);
       }
     };
 
@@ -132,7 +134,9 @@ const ExamResults = () => {
                       paddingRight: '40px'
                     }}
                   >
-                    <option value="">Select an Exam</option>
+                    <option value="">
+                      {exams.length === 0 ? 'No exams available' : 'Select an Exam'}
+                    </option>
                     {exams.map((exam) => (
                       <option key={exam.examId} value={exam.examId}>
                         {exam.examId} ({exam.totalCandidates} candidates)
@@ -240,32 +244,40 @@ const ExamResults = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredResults.map((result, index) => (
-                    <tr key={result.registrationNumber}>
-                      <td className="fw-bold" style={{ padding: '1rem' }}>#{index + 1}</td>
-                      <td>
-                        <div className="fw-bold">{result.candidateName}</div>
+                  {filteredResults.length > 0 ? (
+                    filteredResults.map((result, index) => (
+                      <tr key={result.registrationNumber}>
+                        <td className="fw-bold" style={{ padding: '1rem' }}>#{index + 1}</td>
+                        <td>
+                          <div className="fw-bold">{result.candidateName}</div>
+                        </td>
+                        <td className="text-muted">{result.registrationNumber}</td>
+                        <td>{getStatusBadge(result.submitted, result.used)}</td>
+                        <td className="text-center">
+                          <span className="badge bg-success-subtle text-success px-3 py-2">
+                            {result.correctAnswers}
+                          </span>
+                        </td>
+                        <td className="text-center">
+                          <span className="badge bg-danger-subtle text-danger px-3 py-2">
+                            {result.wrongAnswers}
+                          </span>
+                        </td>
+                        <td className="text-center">
+                          <span className="badge bg-warning-subtle text-warning px-3 py-2">
+                            {result.skippedQuestions}
+                          </span>
+                        </td>
+                        <td className="text-center fw-bold">{result.totalQuestions}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="8" className="text-center py-5 text-muted">
+                        No results found matching your search criteria
                       </td>
-                      <td className="text-muted">{result.registrationNumber}</td>
-                      <td>{getStatusBadge(result.submitted, result.used)}</td>
-                      <td className="text-center">
-                        <span className="badge bg-success-subtle text-success px-3 py-2">
-                          {result.correctAnswers}
-                        </span>
-                      </td>
-                      <td className="text-center">
-                        <span className="badge bg-danger-subtle text-danger px-3 py-2">
-                          {result.wrongAnswers}
-                        </span>
-                      </td>
-                      <td className="text-center">
-                        <span className="badge bg-warning-subtle text-warning px-3 py-2">
-                          {result.skippedQuestions}
-                        </span>
-                      </td>
-                      <td className="text-center fw-bold">{result.totalQuestions}</td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
@@ -273,9 +285,17 @@ const ExamResults = () => {
         </div>
       )}
 
-      {!selectedExam && !loading && (
+      {!selectedExam && !loading && exams.length === 0 && (
         <div className="text-center py-5">
-          <div className="mb-3">📊</div>
+          <div className="mb-3" style={{ fontSize: '4rem' }}>📋</div>
+          <h3 className="h5 text-muted mb-2">No Exams Found</h3>
+          <p className="text-muted small mb-0">There are currently no exam results available in the system.</p>
+        </div>
+      )}
+
+      {!selectedExam && !loading && exams.length > 0 && (
+        <div className="text-center py-5">
+          <div className="mb-3" style={{ fontSize: '4rem' }}>📊</div>
           <h3 className="h5 text-muted mb-2">Select an Exam to View Results</h3>
           <p className="text-muted small mb-0">Choose an exam from the dropdown menu above to see detailed results.</p>
         </div>

@@ -6,7 +6,7 @@ import Spinner from 'react-bootstrap/Spinner';
 import Toast from 'react-bootstrap/Toast';
 import ToastContainer from 'react-bootstrap/ToastContainer';
 import "./PracticeMainExam.css";
-import API_BASE_URL from './ApiConifg';
+import API_BASE_URL from './ApiConfig';
 
 const PracticeMainExam = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);

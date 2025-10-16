@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Search, AlertCircle, CheckCircle, XCircle, Loader2, Clock } from 'lucide-react';
-import API_BASE_URL from "./ApiConifg";
+import API_BASE_URL from "./ApiConfig";
 
 const CandidateAnswerViewer = () => {
   const [registrationId, setRegistrationId] = useState('');

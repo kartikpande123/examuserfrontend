@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './Help.css';
-import API_BASE_URL from "./ApiConifg"
+import API_BASE_URL from "./ApiConfig"
 import {Link} from "react-router-dom"
 
 const Help = () => {

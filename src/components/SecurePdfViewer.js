@@ -5,7 +5,7 @@ import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
 import { Viewer } from '@react-pdf-viewer/core';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
-import API_BASE_URL from './ApiConifg';
+import API_BASE_URL from './ApiConfig';
 import { SpecialZoomLevel } from '@react-pdf-viewer/core';
 
 export default function SecurePdfViewer({ selectedSyllabus, studentName }) {

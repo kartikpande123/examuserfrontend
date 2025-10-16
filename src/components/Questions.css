@@ -1,0 +1,214 @@
+/* General Styles */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f9f9f9;
+  }
+  
+  .question-manager {
+    max-width: 1200px;
+    margin: 30px auto;
+    padding: 20px;
+    background: #fff;
+    border: 2px solid #dcdcdc;
+    border-radius: 10px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Title */
+  .title {
+    text-align: center;
+    font-size: 2.5rem;
+    color: #34495e;
+    margin-bottom: 20px;
+    border-bottom: 3px solid #3498db;
+    padding-bottom: 10px;
+  }
+  
+  /* Form Section */
+  .form-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    border: 1px solid #dcdcdc;
+    border-radius: 8px;
+    background: #fdfdfd;
+  }
+  
+  .field-label {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #333;
+    display: block;
+    margin-bottom: 10px;
+  }
+  
+  .styled-input,
+  .styled-textarea,
+  .styled-select {
+    width: 100%;
+    padding: 10px 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    font-size: 1rem;
+    background: #f9f9f9;
+    transition: border-color 0.3s;
+  }
+  
+  .styled-input:focus,
+  .styled-textarea:focus,
+  .styled-select:focus {
+    border-color: #3498db;
+    outline: none;
+  }
+  
+  .styled-textarea {
+    resize: none;
+  }
+  
+  /* Buttons */
+  .submit-button {
+    display: inline-block;
+    background: #3498db;
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    transition: background 0.3s;
+    margin-right: 10px;
+  }
+  
+  .submit-button:hover {
+    background: #2c81ba;
+  }
+  
+  /* Options Section */
+  .options-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+  
+  .option-field {
+    flex: 1;
+    min-width: calc(50% - 15px);
+  }
+  
+  .correct {
+    font-weight: bold;
+    color: #27ae60;
+  }
+  
+  /* Questions List */
+  .questions-list {
+    margin-top: 20px;
+  }
+  
+  .list-title {
+    font-size: 1.8rem;
+    color: #34495e;
+    margin-bottom: 10px;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 5px;
+  }
+  
+  .question-item {
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    background: #fafafa;
+    transition: box-shadow 0.3s;
+  }
+  
+  .question-item:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .question-details {
+    margin-bottom: 10px;
+  }
+  
+  .thumbnail {
+    display: block;
+    max-width: 200px;
+    max-height: 150px;
+    margin-top: 10px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+  }
+  
+  /* Action Buttons */
+  .actions {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .edit-button,
+  .delete-button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    transition: background 0.3s, color 0.3s;
+  }
+  
+  .edit-button {
+    background: #f39c12;
+    color: #fff;
+  }
+  
+  .edit-button:hover {
+    background: #d8870e;
+  }
+  
+  .delete-button {
+    background: #e74c3c;
+    color: #fff;
+  }
+  
+  .delete-button:hover {
+    background: #c0392b;
+  }
+  
+  /* Image Preview */
+  .preview-image {
+    max-width: 100%;
+    max-height: 200px;
+    margin-top: 10px;
+    border-radius: 5px;
+    border: 2px solid #dcdcdc;
+    display: block;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .options-section {
+      flex-direction: column;
+    }
+  
+    .option-field {
+      min-width: 100%;
+    }
+  
+    .submit-button {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+  
+    .actions {
+      flex-direction: column;
+    }
+  
+    .edit-button,
+    .delete-button {
+      width: 100%;
+    }
+  }
+  

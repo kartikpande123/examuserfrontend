@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { jsPDF } from 'jspdf';
 import image from "../Images/LOGO.jpg";
-import API_BASE_URL from "./ApiConifg";
+import API_BASE_URL from "./ApiConfig";
 
 const PaymentGateway = () => {
   const location = useLocation();
