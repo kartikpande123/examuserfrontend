@@ -92,7 +92,7 @@ const UpcomingExams = () => {
   return (
     <div className="container py-5">
       <div className="text-center mb-5">
-        <h1 className="display-4 fw-bold text-primary mb-2">Upcoming Examinations</h1>
+        <h1 className="display-4 fw-bold text-primary mb-2">Upcoming Live Examinations</h1>
         <p className="text-muted" style={{borderBottom:"3px solid blue", fontSize:"24px"}}>
           Prepare for your next challenge
         </p>

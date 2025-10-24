@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Coins, Download, FilePlus, FileCheck, Book, Calendar, File } from 'lucide-react';
+import { Coins, Download, FilePlus, FileCheck, Book, Calendar, File, Video } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import axios from 'axios';
@@ -14,6 +14,7 @@ export default function GstInvoice() {
   const [liveTestData, setLiveTestData] = useState([]);
   const [practiceTestData, setPracticeTestData] = useState([]);
   const [syllabusPdfData, setSyllabusPdfData] = useState([]);
+  const [videoSyllabusData, setVideoSyllabusData] = useState([]);
   const [error, setError] = useState('');
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -22,7 +23,7 @@ export default function GstInvoice() {
   const [processedInvoices, setProcessedInvoices] = useState(0);
   const [downloadMode, setDownloadMode] = useState('individual'); // 'individual' or 'combined'
 
-  const fileOptions = ['Live Test', 'Practice Test', 'Syllabus PDF', 'All'];
+  const fileOptions = ['Live Test', 'Practice Test', 'Syllabus PDF', 'Video Syllabus', 'All'];
   const monthOptions = [
     'January', 'February', 'March', 'April',
     'May', 'June', 'July', 'August',
@@ -254,6 +255,53 @@ export default function GstInvoice() {
         setSyllabusPdfData(allSyllabusPurchases);
       }
       
+      // For Video Syllabus
+      if (fileType === 'Video Syllabus' || fileType === 'All') {
+        const videoSyllabusResponse = await axios.get(`${API_BASE_URL}/api/videosyllabuspurchasers`);
+        
+        // Extract all purchases
+        const allVideoSyllabusPurchases = [];
+        if (videoSyllabusResponse.data.success) {
+          Object.keys(videoSyllabusResponse.data.data).forEach(userId => {
+            const userData = videoSyllabusResponse.data.data[userId];
+            
+            if (userData.purchases) {
+              // Process object-based purchases
+              Object.keys(userData.purchases).forEach(purchaseId => {
+                const purchase = userData.purchases[purchaseId];
+                
+                // Only include paid purchases (paymentAmount > 0)
+                if (purchase.paymentStatus === 'completed' && parseFloat(purchase.paymentAmount) > 0) {
+                  allVideoSyllabusPurchases.push({
+                    userId,
+                    purchaseId,
+                    name: userData.name || 'N/A',
+                    phoneNo: userData.phoneNo || 'N/A',
+                    district: userData.district || 'N/A',
+                    state: userData.state || 'N/A',
+                    email: userData.email || 'N/A',
+                    purchaseDate: purchase.purchaseDate || purchase.createdAt,
+                    paymentStatus: 'completed',
+                    paymentAmount: purchase.paymentAmount,
+                    paymentId: purchase.paymentId || `VS-${purchaseId.substring(0, 8)}`,
+                    orderId: purchase.orderId || `VS-ORDER-${purchaseId.substring(0, 8)}`,
+                    syllabusTitle: purchase.syllabusTitle || 'Video Syllabus',
+                    syllabusCategory: purchase.syllabusCategory || 'N/A',
+                    syllabusDuration: purchase.syllabusDuration || 'N/A',
+                    syllabusDescription: purchase.syllabusDescription || '',
+                    syllabusFilePath: purchase.syllabusFilePath || '',
+                    syllabusFileUrl: purchase.syllabusFileUrl || '',
+                    syllabusPrice: purchase.syllabusPrice || 0
+                  });
+                }
+              });
+            }
+          });
+        }
+        
+        setVideoSyllabusData(allVideoSyllabusPurchases);
+      }
+      
     } catch (error) {
       console.error('Error fetching data:', error);
       setError('Failed to fetch data. Please try again.');
@@ -429,6 +477,9 @@ export default function GstInvoice() {
       } else if (type === 'Syllabus PDF') {
         description = `Syllabus PDF: ${purchaseData.syllabusTitle || 'Study Material'}`;
         price = purchaseData.paymentAmount;
+      } else if (type === 'Video Syllabus') {
+        description = `Video Syllabus: ${purchaseData.syllabusTitle || 'Video Material'}`;
+        price = purchaseData.paymentAmount;
       }
       
       // Ensure price is a valid number
@@ -502,7 +553,7 @@ export default function GstInvoice() {
           pdf.text(`Time: ${purchaseData.examStartTime} to ${purchaseData.examEndTime}`, tableStartX + 5, currentY + 7);
           currentY += rowHeight;
         }
-      } else if (type !== 'Live Test' && purchaseData.syllabusDuration) {
+      } else if ((type === 'Practice Test' || type === 'Syllabus PDF' || type === 'Video Syllabus') && purchaseData.syllabusDuration) {
         pdf.rect(tableStartX, currentY, tableWidth, rowHeight);
         pdf.text(`Duration: ${purchaseData.syllabusDuration}`, tableStartX + 5, currentY + 7);
         currentY += rowHeight;
@@ -649,6 +700,11 @@ export default function GstInvoice() {
       filteredData = [...filteredData, ...filteredSyllabusPdf.map(item => ({ ...item, type: 'Syllabus PDF' }))];
     }
     
+    if (fileType === 'Video Syllabus' || fileType === 'All') {
+      const filteredVideoSyllabus = filterByMonth(videoSyllabusData, month, year);
+      filteredData = [...filteredData, ...filteredVideoSyllabus.map(item => ({ ...item, type: 'Video Syllabus' }))];
+    }
+    
     setTotalInvoices(filteredData.length);
     
     try {
@@ -719,6 +775,20 @@ export default function GstInvoice() {
     
     return {
       count: filteredSyllabusPdf.length,
+      total
+    };
+  };
+
+  const getVideoSyllabusStats = () => {
+    const filteredVideoSyllabus = filterByMonth(videoSyllabusData, month, year);
+    
+    const total = filteredVideoSyllabus.reduce((acc, item) => {
+      const amount = parseFloat(item.paymentAmount);
+      return acc + (isNaN(amount) ? 0 : amount);
+    }, 0);
+    
+    return {
+      count: filteredVideoSyllabus.length,
       total
     };
   };
@@ -806,7 +876,7 @@ export default function GstInvoice() {
       {(fileType && month) && (
         <div>
           <div className="row mb-4">
-            <div className="col-md-4">
+            <div className="col-md-3">
               <div style={statBoxStyle}>
                 <h6>Live Tests</h6>
                 {fileType === 'Live Test' || fileType === 'All' ? (
@@ -821,7 +891,7 @@ export default function GstInvoice() {
               </div>
             </div>
             
-            <div className="col-md-4">
+            <div className="col-md-3">
               <div style={statBoxStyle}>
                 <h6>Practice Tests</h6>
                 {fileType === 'Practice Test' || fileType === 'All' ? (
@@ -836,7 +906,7 @@ export default function GstInvoice() {
               </div>
             </div>
             
-            <div className="col-md-4">
+            <div className="col-md-3">
               <div style={statBoxStyle}>
                 <h6>Syllabus PDFs</h6>
                 {fileType === 'Syllabus PDF' || fileType === 'All' ? (
@@ -844,6 +914,21 @@ export default function GstInvoice() {
                     <strong>{getSyllabusPdfStats().count}</strong> purchases
                     <br />
                     <strong>₹{getSyllabusPdfStats().total.toFixed(2)}</strong> total
+                  </div>
+                ) : (
+                  <div className="text-muted">Not selected</div>
+                )}
+              </div>
+            </div>
+
+            <div className="col-md-3">
+              <div style={statBoxStyle}>
+                <h6>Video Syllabus</h6>
+                {fileType === 'Video Syllabus' || fileType === 'All' ? (
+                  <div className="mt-2">
+                    <strong>{getVideoSyllabusStats().count}</strong> purchases
+                    <br />
+                    <strong>₹{getVideoSyllabusStats().total.toFixed(2)}</strong> total
                   </div>
                 ) : (
                   <div className="text-muted">Not selected</div>

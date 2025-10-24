@@ -1,6 +1,6 @@
 import './App.css';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Dashboard from './components/Userdashboard.js';
+import Dashboard from './components/UserDashboard.js';
 import Notifications from './components/Notification';
 import Help from './components/Help';
 import ExamRegistrationForm from './components/ExamForm';
@@ -52,6 +52,13 @@ import PdfSyllabusPurchasers from './components/PdfSyllabusPurchasers.js';
 import GstInvoice from './components/GstInvoice.js';
 import UserSyllabusList from './components/UserSyllabus.js';
 import AdminSyllabusExamManager from './components/AdminSyllabus.js';
+import AdminVideoDashboard from './components/AdminVideoDashboard.js';
+import VideoSyllabusCategoryManager from './components/AdminVideoCategory.js';
+import AdminVideoDetails from './components/AdminVideoDetails.js';
+import VideoSyllabusDashboard from './components/VideoSyllabusDashboard.js';
+import VideoSyllabusRegistration from './components/VideoSyllbuSRegistration.js';
+import VideoSyllabusEntry from './components/VideoSyllabusEntry.js';
+import AdminVideoPurchasers from './components/AdminVideoPurchasers.js';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -97,6 +104,10 @@ function App() {
           <Route path="pdfsyllabusreg" element={<PdfSyllabusRegistration />} />
           <Route path="pdfsyllabusentry" element={<PdfSyllabusEntry />} />
           <Route path="pdfsyllabusview" element={<SecurePdfViewer />} />
+          <Route path="videosyllabusdashboard" element={<VideoSyllabusDashboard />} />
+          <Route path="videosyllabusreg" element={<VideoSyllabusRegistration />} />
+          <Route path="videosyllabusentry" element={<VideoSyllabusEntry />} />
+          <Route path="adminvideopurchase" element={<AdminVideoPurchasers />} />
 
           {/* Admin Login - Public */}
           <Route path="adminlogin" element={<AdminLogin />} />
@@ -205,6 +216,21 @@ function App() {
           <Route path="/adminsyllabus" element={
             <ProtectedRoute>
               <AdminSyllabusExamManager/>
+            </ProtectedRoute>
+          } />
+          <Route path="/adminvideodashboard" element={
+            <ProtectedRoute>
+              <AdminVideoDashboard/>
+            </ProtectedRoute>
+          } />
+          <Route path="/videocategory" element={
+            <ProtectedRoute>
+              <VideoSyllabusCategoryManager/>
+            </ProtectedRoute>
+          } />
+          <Route path="/adminvideodetails" element={
+            <ProtectedRoute>
+              <AdminVideoDetails/>
             </ProtectedRoute>
           } />
         </Routes>

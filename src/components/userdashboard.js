@@ -9,6 +9,8 @@ import {
   Bookmark,
   Book,
   BookMarked,
+  Play,
+  Crown,
 } from "lucide-react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import logo from "../Images/LOGO.jpg";
@@ -242,6 +244,15 @@ const styles = `
     border-top-color: #1cc88a;
   }
 
+  .resource-card.video-syllabus {
+    border-top-color: #f6a623;
+  }
+
+  .resource-card.premium {
+    border-top-color: #d4af37;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(212, 175, 55, 0.03) 100%);
+  }
+
   .resource-card-header {
     padding: 1.25rem;
     border-radius: 8px 8px 0 0;
@@ -265,6 +276,14 @@ const styles = `
     color: #1cc88a;
   }
 
+  .resource-card.video-syllabus .resource-icon {
+    color: #f6a623;
+  }
+
+  .resource-card.premium .resource-icon {
+    color: #d4af37;
+  }
+
   .resource-card-body {
     padding: 0 1.25rem 1.25rem;
     flex-grow: 1;
@@ -277,6 +296,19 @@ const styles = `
     font-size: 0.9rem;
     margin-bottom: 1.5rem;
     flex-grow: 1;
+  }
+
+  .premium-features {
+    color: #2d3748;
+    font-size: 0.9rem;
+    margin: 0 0 1.5rem 0;
+    line-height: 1.4;
+  }
+
+  .premium-features span {
+    color: #d4af37;
+    font-weight: bold;
+    margin-right: 0.3rem;
   }
 
   .resource-btn {
@@ -293,6 +325,16 @@ const styles = `
 
   .resource-card.study-materials .resource-btn {
     background-color: #1cc88a;
+  }
+
+  .resource-card.video-syllabus .resource-btn {
+    background-color: #f6a623;
+  }
+
+  .resource-card.premium .resource-btn {
+    background-color: #d4af37;
+    color: #2d3748;
+    font-weight: 600;
   }
 
   .resource-btn:hover {
@@ -470,6 +512,8 @@ const Dashboard = () => {
   const goToExamWinnersDashboard = () => navigate("/findwinner");
   const goToPracticeTests = () => navigate("/practicetestdashboard");
   const goToStudyMaterials = () => navigate("/pdfsyllabusdashboard");
+  const goToUpgradeNow = () => navigate("/upgrade");
+  const goTovideoDashboard = () => navigate("/videosyllabusdashboard");
 
   const unreadCount = notifications.filter((n) => !n.read).length;
   const displayCount = unreadCount > 3 ? "3+" : unreadCount;
@@ -625,6 +669,46 @@ const Dashboard = () => {
                     onClick={goToStudyMaterials}
                   >
                     Explore Materials
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-12 col-md-3 col-lg-3">
+              <div className="resource-card video-syllabus">
+                <div className="resource-card-header">
+                  <Play size={24} className="resource-icon" />
+                  <h3>Video Syllabus</h3>
+                </div>
+                <div className="resource-card-body">
+                  <p>
+                    Watch comprehensive video lectures and tutorials from expert instructors covering complete syllabus.
+                  </p>
+                  <button 
+                    className="resource-btn" 
+                    onClick={goTovideoDashboard}
+                  >
+                    Explore Videos
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-12 col-md-3 col-lg-3">
+              <div className="resource-card premium">
+                <div className="resource-card-header">
+                  <Crown size={24} className="resource-icon" />
+                  <h3>Super User Premium</h3>
+                </div>
+                <div className="resource-card-body">
+                  <p className="premium-features">
+                    <span>✓</span>Unlimited practice tests access. <span>✓</span>All video materials included. <span>✓</span>Priority support & assistance. <span>✓</span>Ad-free learning experience. Get complete access to all premium features!
+                  </p>
+                  <button 
+                    className="resource-btn" 
+                    onClick={goToUpgradeNow}
+                  >
+                    Upgrade Now
                   </button>
                 </div>
               </div>
