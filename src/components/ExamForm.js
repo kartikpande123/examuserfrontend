@@ -149,7 +149,7 @@ const ExamForm = () => {
     <div className="container my-5">
       <div className="card shadow">
         <div className="card-header bg-primary text-white text-center">
-          <h3>Exam Application Form</h3>
+          <h3>Exam Application Form (Live Exam)</h3>
         </div>
         <div className="card-body">
           <form onSubmit={handleSubmit}>

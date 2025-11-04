@@ -18,11 +18,24 @@ const PaymentGateway = () => {
   const [showPolicyModal, setShowPolicyModal] = useState(false);
   const [policyAccepted, setPolicyAccepted] = useState(false);
   const [paymentDetails, setPaymentDetails] = useState(null);
+  
+  // Super User States
+  const [showSuperUserCheck, setShowSuperUserCheck] = useState(false);
+  const [superUserId, setSuperUserId] = useState('');
+  const [superUserValidating, setSuperUserValidating] = useState(false);
+  const [isSuperUser, setIsSuperUser] = useState(false);
+  const [superUserDetails, setSuperUserDetails] = useState(null);
+
+  // Ensure formData exists and normalize examDate
+  const formData = location.state || {};
+  formData.examDate = Array.isArray(formData.examDate) ? formData.examDate[0] : formData.examDate;
+
+  // Check if exam is free
+  const isFreeExam = !formData.examPrice || parseInt(formData.examPrice) === 0;
 
   useEffect(() => {
-    // Automatically generate hall ticket after payment is completed
+    // Automatically generate hall ticket after payment/registration is completed
     if (paymentCompleted && !hallTicketGenerated && !loading) {
-      // Set a small delay to show the loading indicator
       const timer = setTimeout(() => {
         handleCreateHallticket();
       }, 1500);
@@ -31,11 +44,7 @@ const PaymentGateway = () => {
     }
   }, [paymentCompleted, hallTicketGenerated, loading]);
 
-  // Ensure formData exists and normalize examDate
-  const formData = location.state || {};
-  formData.examDate = Array.isArray(formData.examDate) ? formData.examDate[0] : formData.examDate;
-
-  if (!formData.exam || !formData.examPrice) {
+  if (!formData.exam) {
     return (
       <div className="container my-5">
         <div className="alert alert-danger">
@@ -85,7 +94,7 @@ const PaymentGateway = () => {
 10. Contact for Cancellation Requests
 • Users can contact us at +91 6360785195 for queries or to initiate a cancellation request.`;
 
-const termsAndConditions = `Terms and Conditions
+  const termsAndConditions = `Terms and Conditions
 
 1. Acceptance of Terms
 • By accessing or using our website, you agree to abide by these Terms and Conditions.
@@ -191,21 +200,179 @@ Privacy Policy
     pdf.save("terms_and_conditions.pdf");
   };
 
+  // Super User Modal - Fixed version
+  const SuperUserModal = () => {
+    const [localSuperUserId, setLocalSuperUserId] = useState(superUserId);
+    const [localError, setLocalError] = useState(error);
+
+    const handleInputChange = (e) => {
+      setLocalSuperUserId(e.target.value);
+      setLocalError(null); // Clear error when user types
+    };
+
+    const handleVerify = async () => {
+      if (!localSuperUserId.trim()) {
+        setLocalError('Please enter user ID');
+        return;
+      }
+
+      setSuperUserValidating(true);
+      setLocalError(null);
+
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/super-user-all`);
+        
+        if (response.data.success && response.data.purchasers) {
+          // Find user by user ID
+          const user = response.data.purchasers.find(
+            purchaser => purchaser.userId === localSuperUserId.trim()
+          );
+
+          if (!user) {
+            setLocalError('User ID not found in super user list');
+            setSuperUserValidating(false);
+            return;
+          }
+
+          // Check if user has active subscription
+          if (!user.hasActiveSubscription) {
+            setLocalError('Your super user subscription has expired');
+            setSuperUserValidating(false);
+            return;
+          }
+
+          // Check expiry date
+          const expiryDate = new Date(user.latestExpiry);
+          const currentDate = new Date();
+
+          if (expiryDate < currentDate) {
+            setLocalError('Your super user subscription has expired');
+            setSuperUserValidating(false);
+            return;
+          }
+
+          // Update parent component state
+          setSuperUserId(localSuperUserId);
+          setIsSuperUser(true);
+          setSuperUserDetails({
+            userId: user.userId,
+            name: user.userDetails.name,
+            phoneNo: user.userDetails.phoneNo,
+            expiryDate: user.latestExpiry
+          });
+          setShowSuperUserCheck(false);
+          
+          // Show success message
+          alert(`Super User Verified!\nName: ${user.userDetails.name}\nValid Until: ${expiryDate.toLocaleDateString()}`);
+          
+        } else {
+          setLocalError('Failed to fetch super user data');
+        }
+      } catch (error) {
+        console.error('Super user validation error:', error);
+        setLocalError('Failed to validate super user. Please try again.');
+      } finally {
+        setSuperUserValidating(false);
+      }
+    };
+
+    const handleClose = () => {
+      setShowSuperUserCheck(false);
+      setLocalSuperUserId('');
+      setLocalError(null);
+      setError(null);
+    };
+
+    return (
+      <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
+        <div className="modal-dialog">
+          <div className="modal-content">
+            <div className="modal-header bg-success text-white">
+              <h5 className="modal-title">Super User Verification</h5>
+              <button
+                type="button"
+                className="btn-close btn-close-white"
+                onClick={handleClose}
+                aria-label="Close"
+              ></button>
+            </div>
+            <div className="modal-body">
+              {localError && (
+                <div className="alert alert-danger" role="alert">
+                  {localError}
+                </div>
+              )}
+              <div className="mb-3">
+                <label htmlFor="superUserId" className="form-label">
+                  Enter Your User ID
+                </label>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="superUserId"
+                  value={localSuperUserId}
+                  onChange={handleInputChange}
+                  placeholder="Enter your super user ID"
+                  disabled={superUserValidating}
+                  autoComplete="off"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleVerify();
+                    }
+                  }}
+                />
+                <small className="text-muted">
+                  Enter the user ID associated with your super user account
+                </small>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleClose}
+                disabled={superUserValidating}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-success"
+                onClick={handleVerify}
+                disabled={superUserValidating || !localSuperUserId.trim()}
+              >
+                {superUserValidating ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Validating...
+                  </>
+                ) : (
+                  'Verify Super User'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const handleOpenSuperUserCheck = () => {
+    setError(null); // Clear any previous errors
+    setShowSuperUserCheck(true);
+  };
+
   const PolicyModal = () => {
     const modalContentRef = React.useRef(null);
 
-    // Function to handle checkbox change without scrolling
     const handleCheckboxChange = (e) => {
-      e.preventDefault(); // Prevent default behavior that might cause scrolling
+      e.preventDefault();
       setPolicyAccepted(e.target.checked);
     };
 
     return (
       <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
-        <div
-          className="modal-dialog modal-lg modal-dialog-scrollable"
-          style={{ maxWidth: '800px' }}
-        >
+        <div className="modal-dialog modal-lg modal-dialog-scrollable" style={{ maxWidth: '800px' }}>
           <div className="modal-content border-0 shadow-lg">
             <div className="modal-header bg-primary text-white border-0">
               <h5 className="modal-title">Policies and Terms</h5>
@@ -226,14 +393,10 @@ Privacy Policy
                 scrollbarColor: '#6c757d transparent'
               }}
             >
-              {/* Cancellation Policy Section */}
               <div className="mb-4 p-3 bg-light rounded">
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <h6 className="fw-bold mb-0 text-primary">Cancellation Policy</h6>
-                  <button
-                    className="btn btn-sm btn-outline-primary"
-                    onClick={downloadCancellationPolicy}
-                  >
+                  <button className="btn btn-sm btn-outline-primary" onClick={downloadCancellationPolicy}>
                     <i className="bi bi-download me-1"></i>
                     Download PDF
                   </button>
@@ -257,14 +420,10 @@ Privacy Policy
                 </div>
               </div>
 
-              {/* Terms and Conditions Section */}
               <div className="p-3 bg-light rounded">
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <h6 className="fw-bold mb-0 text-primary">Terms and Conditions & Privacy Policy</h6>
-                  <button
-                    className="btn btn-sm btn-outline-primary"
-                    onClick={downloadTermsAndConditions}
-                  >
+                  <button className="btn btn-sm btn-outline-primary" onClick={downloadTermsAndConditions}>
                     <i className="bi bi-download me-1"></i>
                     Download PDF
                   </button>
@@ -289,7 +448,6 @@ Privacy Policy
               </div>
             </div>
 
-            {/* Fixed Footer */}
             <div className="modal-footer border-top bg-light" style={{ position: 'sticky', bottom: 0 }}>
               <div className="container-fluid">
                 <div className="row align-items-center">
@@ -321,10 +479,14 @@ Privacy Policy
                       disabled={!policyAccepted}
                       onClick={() => {
                         setShowPolicyModal(false);
-                        handlePayment();
+                        if (isSuperUser || isFreeExam) {
+                          handleFreeRegistration();
+                        } else {
+                          handlePayment();
+                        }
                       }}
                     >
-                      Proceed to Payment
+                      {isSuperUser || isFreeExam ? 'Complete Registration' : 'Proceed to Payment'}
                     </button>
                   </div>
                 </div>
@@ -355,15 +517,63 @@ Privacy Policy
       }
     });
 
-    // Add payment details if available
-    if (paymentDetails) {
+    // Add payment details based on registration type
+    if (isSuperUser) {
+      // For super users
+      formDataToSend.append('paymentId', 'SUPER_USER');
+      formDataToSend.append('orderId', `SUPER_${superUserDetails.userId}_${Date.now()}`);
+      formDataToSend.append('paymentAmount', '0');
+      formDataToSend.append('paymentDate', new Date().toISOString());
+      formDataToSend.append('superUserId', superUserDetails.userId);
+      formDataToSend.append('superUserPhone', superUserDetails.phoneNo);
+    } else if (paymentDetails) {
+      // For paid exams
       formDataToSend.append('paymentId', paymentDetails.paymentId);
       formDataToSend.append('orderId', paymentDetails.orderId);
       formDataToSend.append('paymentAmount', paymentDetails.amount);
       formDataToSend.append('paymentDate', paymentDetails.date);
+    } else if (isFreeExam) {
+      // For free exams
+      formDataToSend.append('paymentId', 'FREE_EXAM');
+      formDataToSend.append('orderId', `FREE_${Date.now()}`);
+      formDataToSend.append('paymentAmount', '0');
+      formDataToSend.append('paymentDate', new Date().toISOString());
     }
 
     return formDataToSend;
+  };
+
+  // Handle free exam registration (also used for super users)
+  const handleFreeRegistration = async () => {
+    try {
+      setPaymentProcessing(true);
+      setError(null);
+
+      // Set payment details based on user type
+      if (isSuperUser) {
+        setPaymentDetails({
+          paymentId: 'SUPER_USER',
+          orderId: `SUPER_${superUserDetails.userId}_${Date.now()}`,
+          amount: '0',
+          date: new Date().toISOString()
+        });
+      } else {
+        setPaymentDetails({
+          paymentId: 'FREE_EXAM',
+          orderId: `FREE_${Date.now()}`,
+          amount: '0',
+          date: new Date().toISOString()
+        });
+      }
+
+      // Mark as completed to trigger hall ticket generation
+      setPaymentCompleted(true);
+      setPaymentProcessing(false);
+    } catch (error) {
+      console.error('Registration error:', error);
+      setError(error.message || 'Failed to complete registration');
+      setPaymentProcessing(false);
+    }
   };
 
   const loadRazorpayScript = () => {
@@ -419,7 +629,6 @@ Privacy Policy
         throw new Error(data.error || 'Payment verification failed');
       }
 
-      // Store payment details for later use
       setPaymentDetails({
         paymentId: paymentResponse.razorpay_payment_id,
         orderId: paymentResponse.razorpay_order_id,
@@ -446,7 +655,7 @@ Privacy Policy
         key: "rzp_live_bvTvgAdltDUW4O",
         amount: parseInt(formData.examPrice) * 100,
         currency: "INR",
-        name: "Ayan Study Academy",
+        name: "ARN Study Academy",
         description: `Exam Registration for ${formData.exam}`,
         order_id: order.id,
         prefill: {
@@ -493,11 +702,16 @@ Privacy Policy
     setShowPolicyModal(true);
   };
 
-  // New function to generate and download invoice
   const handleGenerateInvoice = () => {
     try {
       if (!paymentDetails) {
         setError('Payment details not found. Please try again.');
+        return;
+      }
+
+      // Skip invoice generation for free exams and super users
+      if (isFreeExam || isSuperUser) {
+        alert('No invoice is generated for free registrations.');
         return;
       }
   
@@ -507,14 +721,11 @@ Privacy Policy
         format: 'a4'
       });
   
-      // Header background
       pdf.setFillColor(0, 82, 165);
       pdf.rect(0, 0, 210, 15, 'F');
   
-      // Logo
       pdf.addImage(image, 'JPEG', 20, 20, 40, 40);
   
-      // Company details
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(14);
       pdf.setTextColor(0, 0, 0);
@@ -527,7 +738,6 @@ Privacy Policy
       pdf.text('Email: Jubedakbar@gmail.com', 70, 51);
       pdf.text('GSTIN: 29BXYPN0096F1ZS', 70, 58);
   
-      // Invoice title
       pdf.setFillColor(245, 245, 245);
       pdf.roundedRect(65, 65, 80, 15, 3, 3, 'F');
       pdf.setFont('helvetica', 'bold');
@@ -535,12 +745,10 @@ Privacy Policy
       pdf.setTextColor(0, 82, 165);
       pdf.text('INVOICE', 105, 77, { align: 'center' });
   
-      // Decorative line
       pdf.setLineWidth(0.5);
       pdf.setDrawColor(0, 82, 165);
       pdf.line(20, 85, 190, 85);
   
-      // Invoice details
       pdf.setFontSize(11);
       pdf.setTextColor(0, 0, 0);
   
@@ -564,7 +772,6 @@ Privacy Policy
       pdf.setFont('helvetica', 'normal');
       pdf.text(paymentDetails.orderId, 60, 109);
   
-      // Customer details
       pdf.setFont('helvetica', 'bold');
       pdf.text('Bill To:', 120, 102);
       pdf.setFont('helvetica', 'normal');
@@ -574,7 +781,6 @@ Privacy Policy
       pdf.text(`${formData.district || 'N/A'}, ${formData.state || 'N/A'}`, 120, 130);
       pdf.text(`${formData.pincode || 'N/A'}`, 120, 137);
   
-      // GST Note
       pdf.setFont('helvetica', 'bolditalic');
       pdf.setFontSize(12);
       pdf.setTextColor(0, 82, 165);
@@ -582,7 +788,6 @@ Privacy Policy
       pdf.roundedRect(20, 144, 170, 10, 2, 2, 'F');
       pdf.text('Note: The amount shown below is inclusive of 18% GST.', 25, 151);
   
-      // Table header
       pdf.setFillColor(0, 82, 165);
       pdf.rect(20, 160, 170, 10, 'F');
       pdf.setFont('helvetica', 'bold');
@@ -591,7 +796,6 @@ Privacy Policy
       pdf.text('Description', 25, 167);
       pdf.text('Amount (INR)', 160, 167, { align: 'center' });
   
-      // Reset text color and font
       pdf.setTextColor(0, 0, 0);
       pdf.setFont('helvetica', 'normal');
   
@@ -616,13 +820,11 @@ Privacy Policy
         currentY += 7;
       }
   
-      // Exam date & time
       pdf.text(`Exam Date: ${formData.examDate}`, 25, currentY);
       currentY += 7;
       pdf.text(`Time: ${formData.examStartTime} to ${formData.examEndTime}`, 25, currentY);
       currentY += 10;
   
-      // Total Amount Box
       pdf.setFillColor(0, 82, 165);
       pdf.rect(120, currentY + 10, 70, 15, 'F');
       pdf.setLineWidth(0.2);
@@ -636,7 +838,6 @@ Privacy Policy
       pdf.setFontSize(12);
       pdf.text(`INR ${examPrice}`, 180, currentY + 20, { align: 'right' });
   
-      // Footer with top border
       pdf.setDrawColor(0, 0, 0);
       pdf.line(20, 265, 190, 265);
   
@@ -647,7 +848,6 @@ Privacy Policy
       pdf.text('For any queries, please contact +91 6360785195 or +91 9482759409', 105, 279, { align: 'center' });
       pdf.text('You can reach us through the Help section as well.', 105, 286, { align: 'center' });
   
-      // Save PDF
       const filename = `Invoice_${formData.candidateName || 'Candidate'}_${paymentDetails.paymentId?.substring(0, 6)}.pdf`;
       pdf.save(filename);
   
@@ -657,11 +857,6 @@ Privacy Policy
       setError('Failed to generate invoice. Please try again.');
     }
   };
-  
-  
-  
-  
-  
 
   const handleCreateHallticket = async () => {
     if (hallTicketGenerated) {
@@ -673,10 +868,8 @@ Privacy Policy
     setError(null);
   
     try {
-      // Prepare form data with photo file and payment details
       const formDataToSend = prepareRegistrationData();
   
-      // Register candidate with photo compression on server-side
       const registrationResponse = await axios.post(
         `${API_BASE_URL}/api/register`,
         formDataToSend,
@@ -690,7 +883,6 @@ Privacy Policy
         throw new Error(registrationResponse.data.error || 'Registration failed');
       }
   
-      // Fetch latest candidate data
       const response = await axios.get(`${API_BASE_URL}/api/latest-candidate`);
       const candidate = response.data.candidate;
   
@@ -698,36 +890,29 @@ Privacy Policy
         throw new Error('Failed to fetch candidate details');
       }
   
-      // Set registration number
       setRegistrationNumber(candidate.registrationNumber);
   
-      // Create PDF
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4'
       });
   
-      // Add logo
       pdf.addImage(image, 'JPEG', 20, 10, 30, 30);
   
-      // Header styling
       pdf.setFillColor(0, 123, 255);
       pdf.rect(0, 0, 210, 8, 'F');
   
-      // Title
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(24);
       pdf.setTextColor(0, 0, 0);
-      pdf.text('AYAN STUDY ACADEMY', 60, 25);
+      pdf.text('ARN STUDY ACADEMY', 60, 25);
       pdf.setFontSize(16);
       pdf.text('HALL TICKET', 85, 35);
   
-      // Decorative line
       pdf.setLineWidth(0.5);
       pdf.line(20, 40, 190, 40);
   
-      // Registration ID box
       pdf.setFontSize(12);
       pdf.setFont('helvetica', 'bold');
       pdf.setFillColor(240, 240, 240);
@@ -735,14 +920,12 @@ Privacy Policy
       pdf.setTextColor(0, 0, 0);
       pdf.text(`Registration ID: ${candidate.registrationNumber}`, 25, 51);
   
-      // Format exam date
       const examDate = new Date(candidate.examDate).toLocaleDateString('en-IN', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric'
       });
   
-      // Candidate details
       const details = [
         { label: 'Candidate Name', value: candidate.candidateName },
         { label: 'Date of Birth', value: candidate.dob },
@@ -765,7 +948,6 @@ Privacy Policy
         yPosition += 10;
       });
   
-      // Add candidate photo
       if (candidate.photoUrl) {
         try {
           pdf.addImage(candidate.photoUrl, 'JPEG', 140, 60, 35, 45);
@@ -775,7 +957,6 @@ Privacy Policy
         }
       }
   
-      // Instructions section
       yPosition += 10;
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(14);
@@ -809,7 +990,6 @@ Privacy Policy
         yPosition += 7;
       });
   
-      // Save PDF
       pdf.save(`${candidate.candidateName}_HallTicket.pdf`);
       
       setHallTicketGenerated(true);
@@ -818,7 +998,6 @@ Privacy Policy
     } catch (error) {
       console.error('Error generating hall ticket:', error);
       
-      // Detailed error handling
       if (error.response) {
         switch (error.response.status) {
           case 400:
@@ -847,12 +1026,27 @@ Privacy Policy
     <div className="container my-5">
       <div className="card shadow">
         <div className="card-header bg-primary text-white">
-          <h3 className="mb-0">Payment Gateway</h3>
+          <h3 className="mb-0">
+            {isSuperUser ? 'Super User Registration' : isFreeExam ? 'Free Exam Registration' : 'Payment Gateway'}
+          </h3>
         </div>
         <div className="card-body">
           {error && (
             <div className="alert alert-danger" role="alert">
               {error}
+            </div>
+          )}
+
+          {isSuperUser && (
+            <div className="alert alert-success mb-4">
+              <h5 className="alert-heading">✓ Super User Verified</h5>
+              <p className="mb-0">
+                <strong>User ID:</strong> {superUserDetails.userId}<br />
+                <strong>Name:</strong> {superUserDetails.name}<br />
+                <strong>Phone:</strong> {superUserDetails.phoneNo}<br />
+                <strong>Valid Until:</strong> {new Date(superUserDetails.expiryDate).toLocaleDateString()}<br />
+                <span className="badge bg-success mt-2">Payment Bypass Activated</span>
+              </p>
             </div>
           )}
 
@@ -871,13 +1065,19 @@ Privacy Policy
             <div className="col-md-6 offset-md-3">
               <div className="card">
                 <div className="card-body">
-                  <h5 className="card-title">Exam Payment Details</h5>
+                  <h5 className="card-title">Exam {isSuperUser || isFreeExam ? 'Registration' : 'Payment'} Details</h5>
                   <p className="card-text">
                     <strong>Exam:</strong> {formData.exam}<br />
                     <strong>Exam Date:</strong> {formData.examDate}<br />
                     <strong>Exam Time:</strong> {formData.examStartTime} to {formData.examEndTime}<br />
                     <strong>Candidate Name:</strong> {formData.candidateName}<br />
-                    <strong>Amount:</strong> ₹{formData.examPrice}
+                    {isSuperUser ? (
+                      <span className="badge bg-success fs-6 mt-2">SUPER USER - NO PAYMENT REQUIRED</span>
+                    ) : isFreeExam ? (
+                      <span className="badge bg-success fs-6 mt-2">FREE EXAM</span>
+                    ) : (
+                      <><strong>Amount:</strong> ₹{formData.examPrice}</>
+                    )}
                   </p>
                 </div>
               </div>
@@ -893,61 +1093,82 @@ Privacy Policy
             </div>
           )}
 
-<div className="text-center">
-  {!paymentCompleted ? (
-    <button
-      onClick={initiatePaymentProcess}
-      className="btn btn-primary btn-lg mb-3"
-      disabled={paymentProcessing || loading}
-    >
-      {paymentProcessing ? (
-        <span>
-          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-          Processing Payment...
-        </span>
-      ) : (
-        'Proceed to Payment'
-      )}
-    </button>
-  ) : (
-    <div>
-      <div className="alert alert-success mb-3">
-        Payment completed successfully!
-      </div>
-      {!hallTicketGenerated ? (
-        <div className="text-center mb-3">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Generating hall ticket...</span>
+          <div className="text-center">
+            {!paymentCompleted ? (
+              <div>
+                {/* Super User Check Button - Only show for paid exams */}
+                {!isFreeExam && !isSuperUser && (
+                  <div className="mb-3">
+                    <button
+                      onClick={handleOpenSuperUserCheck}
+                      className="btn btn-success btn-sm"
+                      disabled={paymentProcessing || loading}
+                    >
+                      <i className="bi bi-star-fill me-2"></i>
+                      Are you a Super User? Click here
+                    </button>
+                  </div>
+                )}
+
+                <button
+                  onClick={initiatePaymentProcess}
+                  className="btn btn-primary btn-lg mb-3"
+                  disabled={paymentProcessing || loading}
+                >
+                  {paymentProcessing ? (
+                    <span>
+                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      {isSuperUser || isFreeExam ? 'Processing Registration...' : 'Processing Payment...'}
+                    </span>
+                  ) : (
+                    isSuperUser || isFreeExam ? 'Complete Registration' : 'Proceed to Payment'
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div>
+                <div className="alert alert-success mb-3">
+                  {isSuperUser ? 'Super User registration completed successfully!' : 
+                   isFreeExam ? 'Registration completed successfully!' : 
+                   'Payment completed successfully!'}
+                </div>
+                {!hallTicketGenerated ? (
+                  <div className="text-center mb-3">
+                    <div className="spinner-border text-primary" role="status">
+                      <span className="visually-hidden">Generating hall ticket...</span>
+                    </div>
+                    <p className="mt-2">Generating your hall ticket automatically...</p>
+                  </div>
+                ) : (
+                  <div className="alert alert-info mb-3">
+                    <h5 className="alert-heading">Hall Ticket Generated Successfully!</h5>
+                    <p>Your hall ticket has been automatically generated and downloaded.</p>
+                  </div>
+                )}
+                {!isFreeExam && !isSuperUser && (
+                  <div className="d-flex flex-column flex-md-row justify-content-center gap-3">
+                    <button
+                      onClick={handleGenerateInvoice}
+                      className="btn btn-primary btn-lg"
+                      disabled={loading || !paymentDetails}
+                    >
+                      {invoiceGenerated ? 'Download Invoice Again' : 'Download Invoice'}
+                    </button>
+                  </div>
+                )}
+                {!isFreeExam && !isSuperUser && !invoiceGenerated && (
+                  <div className="alert alert-warning mt-3">
+                    <strong>Important:</strong> If you don't download your invoice now, you won't be able to access it in the future. Please make sure to download and save it.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-          <p className="mt-2">Generating your hall ticket automatically...</p>
-        </div>
-      ) : (
-        <div className="alert alert-info mb-3">
-          <h5 className="alert-heading">Hall Ticket Generated Successfully!</h5>
-          <p>Your hall ticket has been automatically generated and downloaded.</p>
-        </div>
-      )}
-      <div className="d-flex flex-column flex-md-row justify-content-center gap-3">
-        <button
-          onClick={handleGenerateInvoice}
-          className="btn btn-primary btn-lg"
-          disabled={loading || !paymentDetails}
-        >
-          {invoiceGenerated ? 'Download Invoice Again' : 'Download Invoice'}
-        </button>
-      </div>
-      {!invoiceGenerated && (
-        <div className="alert alert-warning mt-3">
-          <strong>Important:</strong> If you don't download your invoice now, you won't be able to access it in the future. Please make sure to download and save it.
-        </div>
-      )}
-    </div>
-  )}
-</div>
         </div>
       </div>
 
       {showPolicyModal && <PolicyModal />}
+      {showSuperUserCheck && <SuperUserModal />}
     </div>
   );
 };

@@ -12,7 +12,6 @@ const PdfSyllabusDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Use navigate for routing
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,7 +27,6 @@ const PdfSyllabusDashboard = () => {
         const data = await response.json();
         setSyllabi(data);
 
-        // Flatten and sort syllabi
         const allSyllabi = Object.entries(data).flatMap(([category, items]) =>
           Object.entries(items).map(([title, item]) => ({
             ...item,
@@ -49,11 +47,9 @@ const PdfSyllabusDashboard = () => {
     fetchSyllabi();
   }, []);
 
-  // Handle category filter
   const handleCategoryChange = (category) => {
     setSelectedCategory(category);
 
-    // Filter syllabi
     const filtered = Object.entries(syllabi)
       .flatMap(([cat, items]) =>
         Object.entries(items).map(([title, item]) => ({
@@ -71,7 +67,6 @@ const PdfSyllabusDashboard = () => {
     setFilteredSyllabi(filtered);
   };
 
-  // Handle search
   const handleSearch = (e) => {
     const term = e.target.value;
     setSearchTerm(term);
@@ -93,14 +88,11 @@ const PdfSyllabusDashboard = () => {
     setFilteredSyllabi(filtered);
   };
 
-  // Handle PDF purchase - Navigate to registration page
   const handlePurchasePdf = (syllabus) => {
-    // Double check that fees are included in the syllabus object
     if (!syllabus.fees) {
       console.error('Fees information is missing from the syllabus:', syllabus);
     }
     
-    // Navigate to registration page with syllabus details including fees
     navigate('/pdfsyllabusreg', { 
       state: { 
         selectedSyllabus: {
@@ -111,21 +103,18 @@ const PdfSyllabusDashboard = () => {
     });
   };
 
-  // Get unique categories
   const categories = ['All Categories', ...new Set(Object.keys(syllabi))];
 
-  // Render loading state
   if (isLoading) {
     return (
       <div className="text-center py-5">
-        <div className="spinner-border" role="status">
+        <div className="spinner-border" role="status" style={{ color: '#1a3b5d' }}>
           <span className="visually-hidden">Loading...</span>
         </div>
       </div>
     );
   }
 
-  // Render error state
   if (error) {
     return (
       <div className="alert alert-danger text-center" role="alert">
@@ -149,7 +138,7 @@ const PdfSyllabusDashboard = () => {
         <button
           style={{
             padding: '12px 24px',
-            backgroundColor: '#4CAF50', // Green color
+            backgroundColor: '#4CAF50',
             color: 'white',
             border: 'none',
             borderRadius: '4px',
@@ -181,7 +170,6 @@ const PdfSyllabusDashboard = () => {
           className="d-flex align-items-center"
           style={{ width: '100%', maxWidth: '800px', gap: '10px' }}
         >
-          {/* Search Bar */}
           <div
             className="input-group"
             style={{
@@ -219,7 +207,6 @@ const PdfSyllabusDashboard = () => {
             />
           </div>
 
-          {/* Category Dropdown */}
           <Dropdown onSelect={(eventKey) => handleCategoryChange(eventKey)}>
             <Dropdown.Toggle
               variant="outline-secondary"
@@ -250,53 +237,157 @@ const PdfSyllabusDashboard = () => {
       <Container fluid className="p-4">
         {filteredSyllabi.length === 0 ? (
           <div className="text-center py-5">
-            <p>No PDF study materials found.</p>
+            <p style={{ color: '#1a3b5d', fontSize: '18px' }}>No PDF study materials found.</p>
           </div>
         ) : (
           <div className="row">
             {filteredSyllabi.map((syllabus, index) => (
-              <div key={index} className="col-md-4 mb-4">
+              <div key={index} className="col-md-4 col-lg-3 mb-4">
                 <div
                   className="card shadow-sm h-100"
                   style={{
-                    borderTop: `4px solid #1a3b5d`,
-                    transition: 'transform 0.3s ease'
+                    borderRadius: '12px',
+                    border: 'none',
+                    overflow: 'hidden',
+                    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-8px)';
+                    e.currentTarget.style.boxShadow = '0 8px 20px rgba(26, 59, 93, 0.2)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
                   }}
                 >
-                  <div className="card-body">
+                  {/* Thumbnail Image */}
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '200px',
+                      backgroundColor: syllabus.imageUrl ? 'transparent' : '#1a3b5d',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    {syllabus.imageUrl ? (
+                      <img
+                        src={syllabus.imageUrl}
+                        alt={syllabus.title}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'contain'
+                        }}
+                      />
+                    ) : (
+                      <div style={{ textAlign: 'center', color: 'white' }}>
+                        <i className="bi bi-file-earmark-pdf" style={{ fontSize: '60px' }}></i>
+                        <p style={{ marginTop: '10px', fontSize: '14px' }}>No Thumbnail</p>
+                      </div>
+                    )}
+                    
+                    {/* Category Badge */}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '10px',
+                        right: '10px',
+                        backgroundColor: '#4CAF50',
+                        color: 'white',
+                        padding: '5px 12px',
+                        borderRadius: '20px',
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+                      }}
+                    >
+                      {syllabus.category}
+                    </div>
+                  </div>
+
+                  <div className="card-body" style={{ padding: '20px' }}>
                     <h5
                       className="card-title"
                       style={{
                         color: '#1a3b5d',
                         fontWeight: 'bold',
-                        textTransform: 'capitalize'
+                        fontSize: '22px',
+                        marginBottom: '15px',
+                        minHeight: '50px',
+                        lineHeight: '1.4'
                       }}
                     >
-                      {syllabus.title} ({syllabus.category})
+                      {syllabus.title}
                     </h5>
-                    <div className="card-text">
-                      <div className="d-flex align-items-center mb-2">
-                        <i className="bi bi-calendar me-2"></i>
-                        <span>Created: {new Date(syllabus.createdAt).toLocaleDateString()}</span>
+                    
+                    <div style={{ marginBottom: '15px' }}>
+                      <div
+                        className="d-flex align-items-center mb-2"
+                        style={{ fontSize: '14px', color: '#666' }}
+                      >
+                        <i className="bi bi-clock me-2" style={{ color: '#1a3b5d' }}></i>
+                        <span><strong>Duration:</strong> {syllabus.duration || 'N/A'}</span>
                       </div>
-                      <div className="d-flex align-items-center mb-2">
-                        <i className="bi bi-arrow-clockwise me-2"></i>
-                        <span>Updated: {new Date(syllabus.updatedAt).toLocaleDateString()}</span>
+                      
+                      <div
+                        className="d-flex align-items-center mb-2"
+                        style={{ fontSize: '14px', color: '#666' }}
+                      >
+                        <i className="bi bi-calendar-check me-2" style={{ color: '#1a3b5d' }}></i>
+                        <span><strong>Uploded:</strong> {new Date(syllabus.createdAt).toLocaleDateString()}</span>
                       </div>
-                      <div className="d-flex align-items-center mb-2">
-                        <i className="bi bi-clock me-2"></i>
-                        <span>Duration: {syllabus.duration || 'N/A'}</span>
-                      </div>
-                      <div className="d-flex align-items-center mb-2">
-                        <i className="bi bi-currency-rupee me-2"></i>
-                        <span>Price: {syllabus.fees === 0 ? 'Free' : syllabus.fees ? `INR ${syllabus.fees}` : 'N/A'}</span>
+                      {/* Price Badge */}
+                      <div
+                        className="d-flex align-items-center"
+                        style={{ fontSize: '14px', color: '#666' }}
+                      >
+                        <i className="bi bi-currency-rupee me-2" style={{ color: '#1a3b5d' }}></i>
+                        <span>
+                          <strong>Price:</strong> 
+                          <span style={{ 
+                            marginLeft: '8px',
+                            backgroundColor: syllabus.fees === 0 ? '#2196F3' : '#FF9800',
+                            color: 'white',
+                            padding: '4px 12px',
+                            borderRadius: '12px',
+                            fontSize: '13px',
+                            fontWeight: 'bold'
+                          }}>
+                            {syllabus.fees === 0 ? 'FREE' : `₹${syllabus.fees}`}
+                          </span>
+                        </span>
                       </div>
                     </div>
+
                     <button
-                      className="btn btn-primary mt-3 w-100"
-                      style={{ backgroundColor: '#1a3b5d', borderColor: '#1a3b5d' }}
+                      className="btn w-100"
+                      style={{
+                        backgroundColor: '#1a3b5d',
+                        borderColor: '#1a3b5d',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        padding: '12px',
+                        borderRadius: '8px',
+                        fontSize: '15px',
+                        transition: 'all 0.3s ease',
+                        marginTop: '10px'
+                      }}
                       onClick={() => handlePurchasePdf(syllabus)}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#2c5282';
+                        e.currentTarget.style.transform = 'scale(1.02)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#1a3b5d';
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
                     >
+                      <i className="bi bi-cart-plus me-2"></i>
                       {syllabus.fees === 0 ? 'Get Free PDF' : 'Purchase PDF'}
                     </button>
                   </div>

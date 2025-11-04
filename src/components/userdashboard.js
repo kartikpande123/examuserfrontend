@@ -11,6 +11,7 @@ import {
   BookMarked,
   Play,
   Crown,
+  PlayCircle,
 } from "lucide-react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import logo from "../Images/LOGO.jpg";
@@ -79,12 +80,76 @@ const styles = `
     padding: 2rem 1rem;
   }
 
+  .dashboard-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
   .dashboard-title {
     color: #1a3b5d;
     font-size: 2.2rem;
     font-weight: 700;
-    text-align: center;
-    margin-bottom: 2.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .tutorial-link-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.8rem;
+  }
+
+  .tutorial-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.7rem 1.5rem;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tutorial-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s;
+  }
+
+  .tutorial-link:hover::before {
+    left: 100%;
+  }
+
+  .tutorial-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    color: white;
+    text-decoration: underline;
+  }
+
+  .tutorial-icon {
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
   }
 
   .exam-card {
@@ -110,6 +175,10 @@ const styles = `
     align-items: center;
   }
 
+  .exam-card-header.expired {
+    background-color: #6c757d;
+  }
+
   .exam-card-header h3 {
     margin: 0;
     font-size: 1.2rem;
@@ -121,6 +190,10 @@ const styles = `
     padding: 0.3rem 0.8rem;
     border-radius: 4px;
     font-size: 0.8rem;
+  }
+
+  .status-badge.expired {
+    background: rgba(220, 53, 69, 0.3);
   }
 
   .exam-card-body {
@@ -179,7 +252,23 @@ const styles = `
   .start-exam-btn.disabled {
     opacity: 0.6;
     cursor: not-allowed;
-    background-color: #ccc;
+    background-color: #dc3545;
+  }
+
+  .exam-status-message {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 0.8rem;
+    border-radius: 4px;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: #856404;
+  }
+
+  .exam-status-message.expired {
+    background-color: #f8d7da;
+    border-left-color: #dc3545;
+    color: #721c24;
   }
 
   .action-buttons {
@@ -432,6 +521,15 @@ const styles = `
       margin: 0;
       max-width: 100%;
     }
+
+    .dashboard-title {
+      font-size: 1.8rem;
+    }
+
+    .tutorial-link {
+      font-size: 0.85rem;
+      padding: 0.6rem 1.2rem;
+    }
   }
 `;
 
@@ -440,6 +538,7 @@ const Dashboard = () => {
   const [notifications, setNotifications] = useState([]);
   const [temporarilyHidden, setTemporarilyHidden] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
+  const [isExamExpired, setIsExamExpired] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -468,6 +567,37 @@ const Dashboard = () => {
     }
     return cleanup;
   }, [location]);
+
+  useEffect(() => {
+    const checkExamTime = () => {
+      if (!exam) return;
+
+      const now = new Date();
+      const [endTime, period] = exam.endTime.split(' ');
+      const [endHours, endMinutes] = endTime.split(':').map(Number);
+      
+      let adjustedEndHours = endHours;
+      if (period === 'PM' && endHours !== 12) {
+        adjustedEndHours += 12;
+      } else if (period === 'AM' && endHours === 12) {
+        adjustedEndHours = 0;
+      }
+
+      const examEndTime = new Date();
+      examEndTime.setHours(adjustedEndHours, endMinutes, 0, 0);
+
+      if (now > examEndTime) {
+        setIsExamExpired(true);
+      } else {
+        setIsExamExpired(false);
+      }
+    };
+
+    checkExamTime();
+    const interval = setInterval(checkExamTime, 60000);
+
+    return () => clearInterval(interval);
+  }, [exam]);
 
   const fetchNotifications = async () => {
     try {
@@ -503,7 +633,13 @@ const Dashboard = () => {
   };
 
   const handleNotificationClick = () => setTemporarilyHidden(true);
-  const goToExamEntry = () => navigate("/examentry");
+  const goToExamEntry = () => {
+    if (isExamExpired) {
+      alert("This exam has ended. You cannot start it anymore.");
+      return;
+    }
+    navigate("/examentry");
+  };
   const goToResults = () => navigate("/examresults");
   const goToSyllabus = () => navigate("/usersyllabus");
   const goToHallTicket = () => navigate("/downloadhallticket");
@@ -512,8 +648,9 @@ const Dashboard = () => {
   const goToExamWinnersDashboard = () => navigate("/findwinner");
   const goToPracticeTests = () => navigate("/practicetestdashboard");
   const goToStudyMaterials = () => navigate("/pdfsyllabusdashboard");
-  const goToUpgradeNow = () => navigate("/upgrade");
+  const goToUpgradeNow = () => navigate("/superuser");
   const goTovideoDashboard = () => navigate("/videosyllabusdashboard");
+  const goToTutorialDashboard = () => navigate("/tutorialdashboard");
 
   const unreadCount = notifications.filter((n) => !n.read).length;
   const displayCount = unreadCount > 3 ? "3+" : unreadCount;
@@ -594,7 +731,15 @@ const Dashboard = () => {
         {showPopup && <WelcomePopup />}
 
         <div className="container main-content">
-          <h1 className="dashboard-title">Exam Dashboard</h1>
+          <div className="dashboard-header">
+            <h1 className="dashboard-title">Exam Dashboard</h1>
+            <div className="tutorial-link-container">
+              <Link to="/tutorialdashboard" className="tutorial-link">
+                <PlayCircle size={20} className="tutorial-icon" />
+                <span>Don't know how to use website? Click to watch tutorials</span>
+              </Link>
+            </div>
+          </div>
 
           <div className="row g-4 justify-content-center">
             <div className="col-12 col-md-3 col-lg-3">
@@ -620,8 +765,11 @@ const Dashboard = () => {
             {exam ? (
               <div className="col-12 col-md-6 col-lg-6">
                 <div className="exam-card">
-                  <div className="exam-card-header">
+                  <div className={`exam-card-header ${isExamExpired ? 'expired' : ''}`}>
                     <h3>{exam.examDetails?.name || "Today's Exam"}</h3>
+                    {isExamExpired && (
+                      <span className="status-badge expired">ENDED</span>
+                    )}
                   </div>
                   <div className="exam-card-body">
                     <div className="info-row">
@@ -640,8 +788,13 @@ const Dashboard = () => {
                         <span className="detail-value">{exam.marks}</span>
                       </div>
                     </div>
-                    <button className="start-exam-btn" onClick={goToExamEntry}>
-                      Start Exam
+                    
+                    <button 
+                      className={`start-exam-btn ${isExamExpired ? 'disabled' : ''}`} 
+                      onClick={goToExamEntry}
+                      disabled={isExamExpired}
+                    >
+                      {isExamExpired ? "Exam is Over Today" : "Start Exam"}
                     </button>
                   </div>
                 </div>

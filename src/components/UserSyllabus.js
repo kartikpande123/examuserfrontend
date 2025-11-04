@@ -62,7 +62,7 @@ const UserSyllabusList = () => {
             <div className="card-header bg-primary text-white">
               <h2 className="mb-0 h4">
                 <FileText className="me-2" size={24} />
-                Available Syllabus Documents
+                Available Syllabus Documents (Live Exam)
               </h2>
             </div>
             <div className="card-body">

@@ -59,6 +59,12 @@ import VideoSyllabusDashboard from './components/VideoSyllabusDashboard.js';
 import VideoSyllabusRegistration from './components/VideoSyllbuSRegistration.js';
 import VideoSyllabusEntry from './components/VideoSyllabusEntry.js';
 import AdminVideoPurchasers from './components/AdminVideoPurchasers.js';
+import AdminSuperUser from './components/AdminSuperUser.js';
+import SuperUserDashboard from './components/SuperUserDashboard.js';
+import AdminSuperUserDashboard from './components/AdminSuperUserDashboard.js';
+import AdminSuperUserPurchasers from './components/AdminSuperUserPurchasers.js';
+import TutorialDashboard from './components/TutorialDashboard.js';
+import AdminAddTut from './components/AdminAddTut.js';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -108,6 +114,8 @@ function App() {
           <Route path="videosyllabusreg" element={<VideoSyllabusRegistration />} />
           <Route path="videosyllabusentry" element={<VideoSyllabusEntry />} />
           <Route path="adminvideopurchase" element={<AdminVideoPurchasers />} />
+          <Route path="superuser" element={<SuperUserDashboard />} />
+          <Route path="tutorialdashboard" element={<TutorialDashboard />} />
 
           {/* Admin Login - Public */}
           <Route path="adminlogin" element={<AdminLogin />} />
@@ -231,6 +239,26 @@ function App() {
           <Route path="/adminvideodetails" element={
             <ProtectedRoute>
               <AdminVideoDetails/>
+            </ProtectedRoute>
+          } />
+          <Route path="/adminsuperuser" element={
+            <ProtectedRoute>
+              <AdminSuperUser/>
+            </ProtectedRoute>
+          } />
+          <Route path="/adminsuperuserdashboard" element={
+            <ProtectedRoute>
+              <AdminSuperUserDashboard/>
+            </ProtectedRoute>
+          } />
+          <Route path="/superuserpurchasers" element={
+            <ProtectedRoute>
+              <AdminSuperUserPurchasers/>
+            </ProtectedRoute>
+          } />
+          <Route path="/adminaddtut" element={
+            <ProtectedRoute>
+              <AdminAddTut/>
             </ProtectedRoute>
           } />
         </Routes>

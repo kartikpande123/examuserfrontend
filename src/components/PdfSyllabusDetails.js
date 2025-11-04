@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import API_BASE_URL from './ApiConfig';
-
+import API_BASE_URL from "./ApiConfig";
 const PdfSyllabusDetails = () => {
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -9,12 +8,14 @@ const PdfSyllabusDetails = () => {
   const [fees, setFees] = useState("");
   const [duration, setDuration] = useState("");
   const [pdfFile, setPdfFile] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [originalCategory, setOriginalCategory] = useState("");
   const [originalTitle, setOriginalTitle] = useState("");
   const [pdfSyllabi, setPdfSyllabi] = useState({});
   const [fileSelectedMessage, setFileSelectedMessage] = useState("");
+  const [imageSelectedMessage, setImageSelectedMessage] = useState("");
 
   useEffect(() => {
     fetchCategories();
@@ -24,15 +25,12 @@ const PdfSyllabusDetails = () => {
   const handleFeesChange = (e) => {
     const value = e.target.value;
 
-    // Allow empty input for clearing the field
     if (value === "") {
       setFees("");
       return;
     }
 
-    // Only allow non-negative numeric input
     if (/^\d+$/.test(value)) {
-      // If input starts with 0 and has more than 1 digit, remove leading zeros
       if (value.length > 1 && value.startsWith('0')) {
         setFees(value.replace(/^0+/, ''));
       } else {
@@ -74,14 +72,17 @@ const PdfSyllabusDetails = () => {
     setFees("");
     setDuration("");
     setPdfFile(null);
+    setImageFile(null);
     setIsEditing(false);
     setOriginalCategory("");
     setOriginalTitle("");
     setFileSelectedMessage("");
+    setImageSelectedMessage("");
 
-    // Reset file input element
-    const fileInput = document.getElementById("pdfFileInput");
-    if (fileInput) fileInput.value = "";
+    const pdfInput = document.getElementById("pdfFileInput");
+    const imageInput = document.getElementById("imageFileInput");
+    if (pdfInput) pdfInput.value = "";
+    if (imageInput) imageInput.value = "";
   };
 
   const handleEdit = (category, title, details) => {
@@ -89,7 +90,6 @@ const PdfSyllabusDetails = () => {
     setSyllabusTitle(title);
     setFees(details.fees ? details.fees.toString() : "0");
 
-    // Parse duration (remove 'days' if present)
     if (details.duration && details.duration !== "N/A") {
       const durationMatch = details.duration.match(/(\d+)/);
       const durationNumber = durationMatch ? parseInt(durationMatch[1]) : "";
@@ -102,32 +102,30 @@ const PdfSyllabusDetails = () => {
     setOriginalCategory(category);
     setOriginalTitle(title);
     setFileSelectedMessage("");
+    setImageSelectedMessage("");
 
-    // Reset file input
-    const fileInput = document.getElementById("pdfFileInput");
-    if (fileInput) fileInput.value = "";
+    const pdfInput = document.getElementById("pdfFileInput");
+    const imageInput = document.getElementById("imageFileInput");
+    if (pdfInput) pdfInput.value = "";
+    if (imageInput) imageInput.value = "";
     setPdfFile(null);
+    setImageFile(null);
 
-    // Scroll to form
     window.scrollTo({
       top: 0,
       behavior: "smooth"
     });
   };
 
-  // Handle duration input to only accept numbers
   const handleDurationChange = (e) => {
     const value = e.target.value;
 
-    // Allow empty input for clearing the field
     if (value === "") {
       setDuration("");
       return;
     }
 
-    // Only allow non-negative numeric input
     if (/^\d+$/.test(value)) {
-      // If input starts with 0 and has more than 1 digit, remove leading zeros
       if (value.length > 1 && value.startsWith('0')) {
         setDuration(value.replace(/^0+/, ''));
       } else {
@@ -136,13 +134,12 @@ const PdfSyllabusDetails = () => {
     }
   };
 
-  // Enhanced file change handler with better validation and feedback
   const handleFileChange = (e) => {
     const file = e.target.files[0];
 
     if (file) {
       if (file.type === "application/pdf") {
-        console.log("File selected:", file.name, "Type:", file.type, "Size:", file.size, "bytes");
+        console.log("PDF selected:", file.name, "Type:", file.type, "Size:", file.size, "bytes");
         setPdfFile(file);
         setFileSelectedMessage(`Selected: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
       } else {
@@ -152,9 +149,30 @@ const PdfSyllabusDetails = () => {
         setFileSelectedMessage("");
       }
     } else {
-      console.log("No file selected");
       setPdfFile(null);
       setFileSelectedMessage("");
+    }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+
+    if (file) {
+      const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      
+      if (validImageTypes.includes(file.type)) {
+        console.log("Image selected:", file.name, "Type:", file.type, "Size:", file.size, "bytes");
+        setImageFile(file);
+        setImageSelectedMessage(`Selected: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
+      } else {
+        alert("Please select a valid image file (JPEG, PNG, GIF, or WebP)");
+        e.target.value = null;
+        setImageFile(null);
+        setImageSelectedMessage("");
+      }
+    } else {
+      setImageFile(null);
+      setImageSelectedMessage("");
     }
   };
 
@@ -174,145 +192,71 @@ const PdfSyllabusDetails = () => {
     try {
       setLoading(true);
 
-      if (isEditing) {
-        // If editing without changing the file
-        if (!pdfFile) {
-          const response = await fetch(`${API_BASE_URL}/api/pdf-syllabi/${originalCategory}/${originalTitle}`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              newCategory: selectedCategory,
-              newTitle: syllabusTitle,
-              fees: fees || "0",
-              duration: duration || "",
-            }),
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || "Failed to update PDF syllabus");
-          }
-
-          alert("PDF syllabus updated successfully!");
-        }
-        // If editing and changing the file
-        else {
-          // First update metadata
-          const metadataResponse = await fetch(`${API_BASE_URL}/api/pdf-syllabi/${originalCategory}/${originalTitle}`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              newCategory: selectedCategory,
-              newTitle: syllabusTitle,
-              fees: fees || "0",
-              duration: duration || "",
-            }),
-          });
-
-          if (!metadataResponse.ok) {
-            const errorData = await metadataResponse.json();
-            throw new Error(errorData.error || "Failed to update PDF syllabus metadata");
-          }
-
-          // Then update the file
-          const fileFormData = new FormData();
-          fileFormData.append("pdfFile", pdfFile);
-
-          // Debug - check what's in the formData
-          console.log("Uploading file:", pdfFile.name, pdfFile.type, pdfFile.size);
-
-          const fileResponse = await fetch(`${API_BASE_URL}/api/pdf-syllabi/${selectedCategory}/${syllabusTitle}/file`, {
-            method: "PUT",
-            body: fileFormData,
-          });
-
-          if (!fileResponse.ok) {
-            const errorData = await fileResponse.json();
-            throw new Error(errorData.error || "Failed to update PDF file");
-          }
-
-          alert("PDF syllabus with file updated successfully!");
-        }
-      } else {
-        // Creating new syllabus - with enhanced debugging
-
-        // Final verification of the file before creating formData
-        console.log("Final check before submission:");
-        console.log("pdfFile state variable exists:", pdfFile !== null);
-        if (pdfFile) {
-          console.log("pdfFile properties:", {
-            name: pdfFile.name,
-            type: pdfFile.type,
-            size: pdfFile.size,
-            lastModified: pdfFile.lastModified
-          });
-        }
-
-        // Check file input element
-        const fileInput = document.getElementById("pdfFileInput");
-        console.log("File input element value:", fileInput ? fileInput.value : "No element");
-        console.log("File input has files:", fileInput && fileInput.files ? fileInput.files.length > 0 : false);
-
-        // Create FormData object
-        const formData = new FormData();
-
-        // Ensure we have a file before proceeding
-        if (!pdfFile) {
-          throw new Error("PDF file is required");
-        }
-
-        // Add data to FormData in specific order
+      const formData = new FormData();
+      
+      if (pdfFile) {
         formData.append("pdfFile", pdfFile);
-        formData.append("category", selectedCategory);
-        formData.append("title", syllabusTitle);
-        formData.append("fees", fees || "0");
-        formData.append("duration", duration || "");
-
-        // Verify formData entries
-        console.log("FormData entries:");
-        for (let pair of formData.entries()) {
-          if (pair[1] instanceof File) {
-            console.log(`${pair[0]}: File - ${pair[1].name}, ${pair[1].type}, ${pair[1].size} bytes`);
-          } else {
-            console.log(`${pair[0]}: ${pair[1]}`);
-          }
-        }
-
-        // Send the request - specify correct content type for multipart/form-data
-        console.log("Sending POST request to:", `${API_BASE_URL}/api/pdf-syllabi`);
-        const response = await fetch(`${API_BASE_URL}/api/pdf-syllabi`, {
-          method: "POST",
-          body: formData,
-          // Important: Do NOT set Content-Type header when sending FormData
-        });
-
-        // Handle the response
-        if (!response.ok) {
-          const responseText = await response.text();
-          console.error("Server response text:", responseText);
-
-          let errorMessage = "Failed to create PDF syllabus";
-          try {
-            const errorData = JSON.parse(responseText);
-            errorMessage = errorData.error || errorMessage;
-          } catch (e) {
-            errorMessage = responseText || errorMessage;
-          }
-
-          throw new Error(errorMessage);
-        }
-
-        alert("PDF syllabus created successfully!");
+      }
+      
+      if (imageFile) {
+        formData.append("imageFile", imageFile);
       }
 
-      // Reset form fields
-      resetForm();
+      if (isEditing) {
+        formData.append("newCategory", selectedCategory);
+        formData.append("newTitle", syllabusTitle);
+      } else {
+        formData.append("category", selectedCategory);
+        formData.append("title", syllabusTitle);
+      }
+      
+      formData.append("fees", fees || "0");
+      formData.append("duration", duration || "");
 
-      // Refresh PDF syllabi list
+      console.log("FormData entries:");
+      for (let pair of formData.entries()) {
+        if (pair[1] instanceof File) {
+          console.log(`${pair[0]}: File - ${pair[1].name}, ${pair[1].type}, ${pair[1].size} bytes`);
+        } else {
+          console.log(`${pair[0]}: ${pair[1]}`);
+        }
+      }
+
+      let url;
+      let method;
+
+      if (isEditing) {
+        url = `${API_BASE_URL}/api/pdf-syllabi/${originalCategory}/${originalTitle}`;
+        method = "PUT";
+      } else {
+        url = `${API_BASE_URL}/api/pdf-syllabi`;
+        method = "POST";
+      }
+
+      console.log(`Sending ${method} request to:`, url);
+      const response = await fetch(url, {
+        method: method,
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const responseText = await response.text();
+        console.error("Server response text:", responseText);
+
+        let errorMessage = `Failed to ${isEditing ? 'update' : 'create'} PDF syllabus`;
+        try {
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          errorMessage = responseText || errorMessage;
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      alert(`PDF syllabus ${isEditing ? 'updated' : 'created'} successfully!`);
+
+      resetForm();
       fetchPdfSyllabi();
     } catch (error) {
       console.error(`Error ${isEditing ? 'updating' : 'creating'} PDF syllabus:`, error);
@@ -338,7 +282,6 @@ const PdfSyllabusDetails = () => {
         throw new Error(errorData.error || "Failed to delete PDF syllabus");
       }
 
-      // Refresh PDF syllabi list
       fetchPdfSyllabi();
       alert("PDF syllabus deleted successfully!");
     } catch (error) {
@@ -359,7 +302,6 @@ const PdfSyllabusDetails = () => {
             </h2>
 
             <form onSubmit={handleSubmit} encType="multipart/form-data">
-              {/* Category Dropdown */}
               <div className="mb-3">
                 <label className="form-label">Select Category*</label>
                 <select
@@ -375,7 +317,6 @@ const PdfSyllabusDetails = () => {
                 </select>
               </div>
 
-              {/* Syllabus Title */}
               <div className="mb-3">
                 <label className="form-label">Syllabus Title*</label>
                 <input
@@ -388,11 +329,10 @@ const PdfSyllabusDetails = () => {
                 />
               </div>
 
-              {/* Fees */}
               <div className="mb-3">
                 <label className="form-label">Fees</label>
                 <input
-                  type="text" // Changed from number to text for better control
+                  type="text"
                   className="form-control"
                   value={fees}
                   onChange={handleFeesChange}
@@ -400,11 +340,10 @@ const PdfSyllabusDetails = () => {
                 />
               </div>
 
-              {/* Duration */}
               <div className="mb-3">
                 <label className="form-label">Duration (in days)</label>
                 <input
-                  type="text" // Changed from number to text for better control
+                  type="text"
                   className="form-control"
                   value={duration}
                   onChange={handleDurationChange}
@@ -412,7 +351,6 @@ const PdfSyllabusDetails = () => {
                 />
               </div>
 
-              {/* PDF File Upload - Enhanced with label and feedback */}
               <div className="mb-3">
                 <label className="form-label">
                   {isEditing ? "PDF File (optional - leave empty to keep current file)" : "PDF File*"}
@@ -437,7 +375,29 @@ const PdfSyllabusDetails = () => {
                 </div>
               </div>
 
-              {/* Action Buttons */}
+              <div className="mb-3">
+                <label className="form-label">
+                  Thumbnail Image (optional)
+                </label>
+                <div className="input-group">
+                  <input
+                    id="imageFileInput"
+                    type="file"
+                    className="form-control"
+                    accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                    onChange={handleImageChange}
+                  />
+                </div>
+                {imageSelectedMessage && (
+                  <div className="form-text text-success mt-1">
+                    <i className="bi bi-check-circle"></i> {imageSelectedMessage}
+                  </div>
+                )}
+                <div className="form-text mt-1">
+                  Accepted formats: JPEG, PNG, GIF, WebP
+                </div>
+              </div>
+
               <div className="d-flex gap-2 mt-4">
                 <button
                   type="submit"
@@ -462,7 +422,6 @@ const PdfSyllabusDetails = () => {
             </form>
           </div>
 
-          {/* Existing PDF Syllabi Section */}
           <div className="p-4 shadow rounded" style={{ backgroundColor: "#f0f8ff" }}>
             <h2 className="text-center mb-4" style={{ color: "#4682B4" }}>Existing PDF Syllabi</h2>
 
@@ -478,18 +437,42 @@ const PdfSyllabusDetails = () => {
                     {Object.entries(syllabi).map(([title, details]) => (
                       <li key={title} className="list-group-item">
                         <div className="d-flex justify-content-between align-items-start mb-2">
-                          <h5 className="mb-0">{title}</h5>
-                          <div>
+                          <div className="d-flex align-items-start gap-3 flex-grow-1">
+                            {details.imageUrl && (
+                              <img 
+                                src={details.imageUrl} 
+                                alt={title}
+                                style={{
+                                  width: "80px",
+                                  height: "80px",
+                                  objectFit: "cover",
+                                  borderRadius: "8px"
+                                }}
+                              />
+                            )}
+                            <div>
+                              <h5 className="mb-2">{title}</h5>
+                              <div className="small">
+                                <div><strong>Fees:</strong> {details.fees > 0 ? `₹${details.fees}` : 'Free'}</div>
+                                <div><strong>Duration:</strong> {details.duration}</div>
+                                <div><strong>Created:</strong> {new Date(details.createdAt).toLocaleString()}</div>
+                                {details.updatedAt && details.updatedAt !== details.createdAt && (
+                                  <div><strong>Updated:</strong> {new Date(details.updatedAt).toLocaleString()}</div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="d-flex flex-column gap-1">
                             <a
                               href={details.fileUrl}
-                              className="btn btn-sm btn-info me-2"
+                              className="btn btn-sm btn-info"
                               target="_blank"
                               rel="noopener noreferrer"
                             >
-                              View
+                              View PDF
                             </a>
                             <button
-                              className="btn btn-sm btn-primary me-2"
+                              className="btn btn-sm btn-primary"
                               onClick={() => handleEdit(category, title, details)}
                               disabled={loading}
                             >
@@ -503,14 +486,6 @@ const PdfSyllabusDetails = () => {
                               Delete
                             </button>
                           </div>
-                        </div>
-                        <div className="small">
-                          <div><strong>Fees:</strong> {details.fees > 0 ? `₹${details.fees}` : 'Free'}</div>
-                          <div><strong>Duration:</strong> {details.duration}</div>
-                          <div><strong>Created:</strong> {new Date(details.createdAt).toLocaleString()}</div>
-                          {details.updatedAt && details.updatedAt !== details.createdAt && (
-                            <div><strong>Updated:</strong> {new Date(details.updatedAt).toLocaleString()}</div>
-                          )}
                         </div>
                       </li>
                     ))}

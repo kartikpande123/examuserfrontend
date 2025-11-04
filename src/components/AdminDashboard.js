@@ -13,7 +13,11 @@ import {
   Clock,
   Book,
   CreditCard,
-  Video
+  Video,
+  Superscript,
+  VideoIcon,
+  VideoOff,
+  School
 } from 'lucide-react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useNavigate } from "react-router-dom";
@@ -347,6 +351,8 @@ const AdminDashboard = () => {
     { id: 12, title: 'PDF Syllabus Details', icon: <Book size={24}/>, color: '#3949AB', special: true },
     { id: 13, title: 'Video Syllabus details', icon: <Video size={24}/>, color: '#3949AB', special: true },
     { id: 14, title: 'GST Invoice Download', icon: <CreditCard size={24}/>, color: '#3949AB', special: true },
+    { id: 15, title: 'Super User Details', icon: <Superscript size={24}/>, color: '#3949AB', special: true },
+    { id: 16, title: 'Add Tutorial Videos', icon: <School size={24}/>, color: '#3949AB', special: true },
   ];
 
   const handleButtonClick = (id, title) => {
@@ -394,6 +400,12 @@ const AdminDashboard = () => {
         break;
       case 14:
         navigate("/gstinvoice");
+        break;
+      case 15:
+        navigate("/adminsuperuserdashboard");
+        break;
+      case 16:
+        navigate("/adminaddtut");
         break;
       default:
         break;

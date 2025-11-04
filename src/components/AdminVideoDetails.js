@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import API_BASE_URL from './ApiConfig';
+import API_BASE_URL from "./ApiConfig";
 
 const VideoSyllabusDetails = () => {
   const [categories, setCategories] = useState([]);
@@ -9,12 +9,14 @@ const VideoSyllabusDetails = () => {
   const [fees, setFees] = useState("");
   const [duration, setDuration] = useState("");
   const [videoFile, setVideoFile] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [originalCategory, setOriginalCategory] = useState("");
   const [originalTitle, setOriginalTitle] = useState("");
   const [videoSyllabi, setVideoSyllabi] = useState({});
-  const [fileSelectedMessage, setFileSelectedMessage] = useState("");
+  const [videoFileSelectedMessage, setVideoFileSelectedMessage] = useState("");
+  const [imageFileSelectedMessage, setImageFileSelectedMessage] = useState("");
 
   useEffect(() => {
     fetchCategories();
@@ -69,12 +71,16 @@ const VideoSyllabusDetails = () => {
     setFees("");
     setDuration("");
     setVideoFile(null);
+    setImageFile(null);
     setIsEditing(false);
     setOriginalCategory("");
     setOriginalTitle("");
-    setFileSelectedMessage("");
-    const fileInput = document.getElementById("videoFileInput");
-    if (fileInput) fileInput.value = "";
+    setVideoFileSelectedMessage("");
+    setImageFileSelectedMessage("");
+    const videoInput = document.getElementById("videoFileInput");
+    const imageInput = document.getElementById("imageFileInput");
+    if (videoInput) videoInput.value = "";
+    if (imageInput) imageInput.value = "";
   };
 
   const handleEdit = (category, title, details) => {
@@ -91,10 +97,14 @@ const VideoSyllabusDetails = () => {
     setIsEditing(true);
     setOriginalCategory(category);
     setOriginalTitle(title);
-    setFileSelectedMessage("");
-    const fileInput = document.getElementById("videoFileInput");
-    if (fileInput) fileInput.value = "";
+    setVideoFileSelectedMessage("");
+    setImageFileSelectedMessage("");
+    const videoInput = document.getElementById("videoFileInput");
+    const imageInput = document.getElementById("imageFileInput");
+    if (videoInput) videoInput.value = "";
+    if (imageInput) imageInput.value = "";
     setVideoFile(null);
+    setImageFile(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -113,23 +123,43 @@ const VideoSyllabusDetails = () => {
     }
   };
 
-  const handleFileChange = (e) => {
+  const handleVideoFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       if (file.type.startsWith("video/")) {
-        console.log("File selected:", file.name, "Type:", file.type, "Size:", file.size, "bytes");
+        console.log("Video file selected:", file.name, "Type:", file.type, "Size:", file.size, "bytes");
         setVideoFile(file);
-        setFileSelectedMessage(`Selected: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`);
+        setVideoFileSelectedMessage(`Selected: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`);
       } else {
         alert("Please select a video file");
         e.target.value = null;
         setVideoFile(null);
-        setFileSelectedMessage("");
+        setVideoFileSelectedMessage("");
       }
     } else {
-      console.log("No file selected");
+      console.log("No video file selected");
       setVideoFile(null);
-      setFileSelectedMessage("");
+      setVideoFileSelectedMessage("");
+    }
+  };
+
+  const handleImageFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.type.startsWith("image/")) {
+        console.log("Image file selected:", file.name, "Type:", file.type, "Size:", file.size, "bytes");
+        setImageFile(file);
+        setImageFileSelectedMessage(`Selected: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`);
+      } else {
+        alert("Please select an image file");
+        e.target.value = null;
+        setImageFile(null);
+        setImageFileSelectedMessage("");
+      }
+    } else {
+      console.log("No image file selected");
+      setImageFile(null);
+      setImageFileSelectedMessage("");
     }
   };
 
@@ -146,86 +176,49 @@ const VideoSyllabusDetails = () => {
     try {
       setLoading(true);
       if (isEditing) {
-        if (!videoFile) {
-          const response = await fetch(`${API_BASE_URL}/api/video-syllabi/${originalCategory}/${originalTitle}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              newCategory: selectedCategory,
-              newTitle: syllabusTitle,
-              fees: fees || "0",
-              duration: duration || "",
-            }),
-          });
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || "Failed to update video syllabus");
-          }
-          alert("Video syllabus updated successfully!");
-        } else {
-          const metadataResponse = await fetch(`${API_BASE_URL}/api/video-syllabi/${originalCategory}/${originalTitle}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              newCategory: selectedCategory,
-              newTitle: syllabusTitle,
-              fees: fees || "0",
-              duration: duration || "",
-            }),
-          });
-          if (!metadataResponse.ok) {
-            const errorData = await metadataResponse.json();
-            throw new Error(errorData.error || "Failed to update video syllabus metadata");
-          }
-          const fileFormData = new FormData();
-          fileFormData.append("videoFile", videoFile);
-          console.log("Uploading file:", videoFile.name, videoFile.type, videoFile.size);
-          const fileResponse = await fetch(`${API_BASE_URL}/api/video-syllabi/${selectedCategory}/${syllabusTitle}/file`, {
-            method: "PUT",
-            body: fileFormData,
-          });
-          if (!fileResponse.ok) {
-            const errorData = await fileResponse.json();
-            throw new Error(errorData.error || "Failed to update video file");
-          }
-          alert("Video syllabus with file updated successfully!");
-        }
-      } else {
-        console.log("Final check before submission:");
-        console.log("videoFile state variable exists:", videoFile !== null);
+        const formData = new FormData();
+        formData.append("newCategory", selectedCategory);
+        formData.append("newTitle", syllabusTitle);
+        formData.append("fees", fees || "0");
+        formData.append("duration", duration || "");
+        
         if (videoFile) {
-          console.log("videoFile properties:", {
-            name: videoFile.name,
-            type: videoFile.type,
-            size: videoFile.size,
-            lastModified: videoFile.lastModified
-          });
+          formData.append("videoFile", videoFile);
         }
-        const fileInput = document.getElementById("videoFileInput");
-        console.log("File input element value:", fileInput ? fileInput.value : "No element");
-        console.log("File input has files:", fileInput && fileInput.files ? fileInput.files.length > 0 : false);
+        if (imageFile) {
+          formData.append("imageFile", imageFile);
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/video-syllabi/${originalCategory}/${originalTitle}`, {
+          method: "PUT",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to update video syllabus");
+        }
+        alert("Video syllabus updated successfully!");
+      } else {
         const formData = new FormData();
         if (!videoFile) {
           throw new Error("Video file is required");
         }
         formData.append("videoFile", videoFile);
+        if (imageFile) {
+          formData.append("imageFile", imageFile);
+        }
         formData.append("category", selectedCategory);
         formData.append("title", syllabusTitle);
         formData.append("fees", fees || "0");
         formData.append("duration", duration || "");
-        console.log("FormData entries:");
-        for (let pair of formData.entries()) {
-          if (pair[1] instanceof File) {
-            console.log(`${pair[0]}: File - ${pair[1].name}, ${pair[1].type}, ${pair[1].size} bytes`);
-          } else {
-            console.log(`${pair[0]}: ${pair[1]}`);
-          }
-        }
+
         console.log("Sending POST request to:", `${API_BASE_URL}/api/video-syllabi`);
         const response = await fetch(`${API_BASE_URL}/api/video-syllabi`, {
           method: "POST",
           body: formData,
         });
+
         if (!response.ok) {
           const responseText = await response.text();
           console.error("Server response text:", responseText);
@@ -308,14 +301,28 @@ const VideoSyllabusDetails = () => {
                   {isEditing ? "Video File (optional - leave empty to keep current file)" : "Video File*"}
                 </label>
                 <div className="input-group">
-                  <input id="videoFileInput" type="file" className="form-control" accept="video/*" onChange={handleFileChange} required={!isEditing} />
+                  <input id="videoFileInput" type="file" className="form-control" accept="video/*" onChange={handleVideoFileChange} required={!isEditing} />
                 </div>
-                {fileSelectedMessage && (
+                {videoFileSelectedMessage && (
                   <div className="form-text text-success mt-1">
-                    <i className="bi bi-check-circle"></i> {fileSelectedMessage}
+                    <i className="bi bi-check-circle"></i> {videoFileSelectedMessage}
                   </div>
                 )}
                 <div className="form-text mt-1">All video formats are accepted (MP4, MOV, AVI, etc.).</div>
+              </div>
+              <div className="mb-3">
+                <label className="form-label">
+                  Thumbnail Image (optional)
+                </label>
+                <div className="input-group">
+                  <input id="imageFileInput" type="file" className="form-control" accept="image/*" onChange={handleImageFileChange} />
+                </div>
+                {imageFileSelectedMessage && (
+                  <div className="form-text text-success mt-1">
+                    <i className="bi bi-check-circle"></i> {imageFileSelectedMessage}
+                  </div>
+                )}
+                <div className="form-text mt-1">Upload a thumbnail image for the video (JPG, PNG, etc.).</div>
               </div>
               <div className="d-flex gap-2 mt-4">
                 <button type="submit" className="btn flex-grow-1" style={{ backgroundColor: "#4682B4", color: "white" }} disabled={loading}>
@@ -341,10 +348,27 @@ const VideoSyllabusDetails = () => {
                     {Object.entries(syllabi).map(([title, details]) => (
                       <li key={title} className="list-group-item">
                         <div className="d-flex justify-content-between align-items-start mb-2">
-                          <h5 className="mb-0">{title}</h5>
-                          <div>
-                            <a href={details.fileUrl} className="btn btn-sm btn-info me-2" target="_blank" rel="noopener noreferrer">View</a>
-                            <button className="btn btn-sm btn-primary me-2" onClick={() => handleEdit(category, title, details)} disabled={loading}>Edit</button>
+                          <div className="d-flex align-items-center gap-3">
+                            {details.imageUrl && (
+                              <img 
+                                src={details.imageUrl} 
+                                alt={`${title} thumbnail`}
+                                style={{ 
+                                  width: "80px", 
+                                  height: "80px", 
+                                  objectFit: "cover",
+                                  borderRadius: "8px"
+                                }}
+                              />
+                            )}
+                            <h5 className="mb-0">{title}</h5>
+                          </div>
+                          <div className="d-flex gap-2">
+                            <a href={details.fileUrl} className="btn btn-sm btn-info" target="_blank" rel="noopener noreferrer">View Video</a>
+                            {details.imageUrl && (
+                              <a href={details.imageUrl} className="btn btn-sm btn-outline-info" target="_blank" rel="noopener noreferrer">View Thumbnail</a>
+                            )}
+                            <button className="btn btn-sm btn-primary" onClick={() => handleEdit(category, title, details)} disabled={loading}>Edit</button>
                             <button className="btn btn-sm btn-danger" onClick={() => handleDeleteSyllabus(category, title)} disabled={loading}>Delete</button>
                           </div>
                         </div>

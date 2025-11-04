@@ -155,7 +155,7 @@ const RegenerateHallTicket = () => {
     <div className="container my-5">
       <div className="card shadow">
         <div className="card-header bg-primary text-white">
-          <h3 className="mb-0">Regenerate Hall Ticket</h3>
+          <h3 className="mb-0">Regenerate Hall Ticket (Live Exam)</h3>
         </div>
         <div className="card-body">
           <form onSubmit={handleSearch} className="mb-4">

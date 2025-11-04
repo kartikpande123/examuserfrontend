@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Coins, Download, FilePlus, FileCheck, Book, Calendar, File, Video } from 'lucide-react';
+import { Coins, Download, FilePlus, FileCheck, Book, Calendar, File, Video, Users } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import axios from 'axios';
@@ -15,15 +15,16 @@ export default function GstInvoice() {
   const [practiceTestData, setPracticeTestData] = useState([]);
   const [syllabusPdfData, setSyllabusPdfData] = useState([]);
   const [videoSyllabusData, setVideoSyllabusData] = useState([]);
+  const [superUserData, setSuperUserData] = useState([]);
   const [error, setError] = useState('');
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [totalInvoices, setTotalInvoices] = useState(0);
   const [processedInvoices, setProcessedInvoices] = useState(0);
-  const [downloadMode, setDownloadMode] = useState('individual'); // 'individual' or 'combined'
+  const [downloadMode, setDownloadMode] = useState('individual');
 
-  const fileOptions = ['Live Test', 'Practice Test', 'Syllabus PDF', 'Video Syllabus', 'All'];
+  const fileOptions = ['Live Test', 'Practice Test', 'Syllabus PDF', 'Video Syllabus', 'Super User Subscription', 'All'];
   const monthOptions = [
     'January', 'February', 'March', 'April',
     'May', 'June', 'July', 'August',
@@ -120,7 +121,6 @@ export default function GstInvoice() {
       if (fileType === 'Live Test' || fileType === 'All') {
         const liveResponse = await axios.get(`${API_BASE_URL}/api/candidates`);
         
-        // Filter only paid candidates
         const paidCandidates = liveResponse.data.candidates.filter(
           candidate => candidate.payment && 
           candidate.payment.status === 'completed' && 
@@ -130,11 +130,10 @@ export default function GstInvoice() {
         setLiveTestData(paidCandidates);
       }
       
-      // For Practice Test - using the updated data structure
+      // For Practice Test
       if (fileType === 'Practice Test' || fileType === 'All') {
         const practiceResponse = await axios.get(`${API_BASE_URL}/api/practicetestpurchasedstudents`);
         
-        // Extract all purchases with new data structure
         const allPracticeTestPurchases = [];
         
         if (practiceResponse.data.success) {
@@ -142,7 +141,6 @@ export default function GstInvoice() {
             const userData = practiceResponse.data.data[userId];
             
             if (userData.purchases && Array.isArray(userData.purchases)) {
-              // Process array-based purchases
               userData.purchases.forEach(purchase => {
                 if (purchase.paymentDetails && 
                     purchase.paymentDetails.status === 'captured' && 
@@ -167,11 +165,9 @@ export default function GstInvoice() {
                 }
               });
             } else if (userData.purchases) {
-              // Process object-based purchases (old format)
               Object.keys(userData.purchases).forEach(purchaseId => {
                 const purchase = userData.purchases[purchaseId];
                 
-                // Only include paid purchases
                 if (purchase.paymentStatus === 'completed' && parseFloat(purchase.paymentAmount) > 0) {
                   allPracticeTestPurchases.push({
                     userId,
@@ -196,14 +192,12 @@ export default function GstInvoice() {
       if (fileType === 'Syllabus PDF' || fileType === 'All') {
         const syllabusResponse = await axios.get(`${API_BASE_URL}/api/pdfsyllabuspurchasers`);
         
-        // Extract all purchases
         const allSyllabusPurchases = [];
         if (syllabusResponse.data.success) {
           Object.keys(syllabusResponse.data.data).forEach(userId => {
             const userData = syllabusResponse.data.data[userId];
             
             if (userData.purchases) {
-              // Check if purchases is an array
               if (Array.isArray(userData.purchases)) {
                 userData.purchases.forEach(purchase => {
                   if (purchase.paymentDetails && 
@@ -229,11 +223,9 @@ export default function GstInvoice() {
                   }
                 });
               } else {
-                // Handle object format
                 Object.keys(userData.purchases).forEach(purchaseId => {
                   const purchase = userData.purchases[purchaseId];
                   
-                  // Only include paid purchases
                   if (purchase.paymentStatus === 'completed' && parseFloat(purchase.paymentAmount) > 0) {
                     allSyllabusPurchases.push({
                       userId,
@@ -259,18 +251,15 @@ export default function GstInvoice() {
       if (fileType === 'Video Syllabus' || fileType === 'All') {
         const videoSyllabusResponse = await axios.get(`${API_BASE_URL}/api/videosyllabuspurchasers`);
         
-        // Extract all purchases
         const allVideoSyllabusPurchases = [];
         if (videoSyllabusResponse.data.success) {
           Object.keys(videoSyllabusResponse.data.data).forEach(userId => {
             const userData = videoSyllabusResponse.data.data[userId];
             
             if (userData.purchases) {
-              // Process object-based purchases
               Object.keys(userData.purchases).forEach(purchaseId => {
                 const purchase = userData.purchases[purchaseId];
                 
-                // Only include paid purchases (paymentAmount > 0)
                 if (purchase.paymentStatus === 'completed' && parseFloat(purchase.paymentAmount) > 0) {
                   allVideoSyllabusPurchases.push({
                     userId,
@@ -302,6 +291,58 @@ export default function GstInvoice() {
         setVideoSyllabusData(allVideoSyllabusPurchases);
       }
       
+      // For Super User Subscription
+      if (fileType === 'Super User Subscription' || fileType === 'All') {
+        const superUserResponse = await axios.get(`${API_BASE_URL}/api/super-user-all`);
+        
+        const allSuperUserPurchases = [];
+        if (superUserResponse.data.success) {
+          superUserResponse.data.purchasers.forEach(purchaser => {
+            const userData = purchaser.userDetails;
+            
+            if (purchaser.purchases) {
+              Object.keys(purchaser.purchases).forEach(purchaseId => {
+                const purchase = purchaser.purchases[purchaseId];
+                
+                // Only include completed payments with amount > 0
+                if (purchase.paymentDetails && 
+                    purchase.paymentDetails.status === 'completed' && 
+                    parseFloat(purchase.paymentDetails.amount) > 0) {
+                  
+                  allSuperUserPurchases.push({
+                    userId: purchaser.userId,
+                    purchaseId,
+                    name: userData.name || 'N/A',
+                    phoneNo: userData.phoneNo || 'N/A',
+                    district: userData.district || 'N/A',
+                    state: userData.state || 'N/A',
+                    email: userData.email || 'N/A',
+                    age: userData.age || 'N/A',
+                    gender: userData.gender || 'N/A',
+                    purchaseDate: purchase.purchaseDate,
+                    paymentStatus: 'completed',
+                    paymentAmount: purchase.paymentDetails.amount,
+                    paymentId: purchase.paymentDetails.paymentId,
+                    orderId: purchase.paymentDetails.orderId,
+                    subscriptionMonth: purchase.subscriptionDetails?.month || 'N/A',
+                    subscriptionPrice: purchase.subscriptionDetails?.price || '0',
+                    subscriptionDiscount: purchase.subscriptionDetails?.discountPercent || '0',
+                    subscriptionFinalPrice: purchase.subscriptionDetails?.finalPrice || 0,
+                    subscriptionTotalDays: purchase.subscriptionDetails?.totalDays || 0,
+                    subscriptionExtraDays: purchase.subscriptionDetails?.extraDays || '0',
+                    expiryDate: purchase.expiryDate,
+                    isActive: purchase.isActive || false,
+                    createdAt: purchase.createdAt
+                  });
+                }
+              });
+            }
+          });
+        }
+        
+        setSuperUserData(allSuperUserPurchases);
+      }
+      
     } catch (error) {
       console.error('Error fetching data:', error);
       setError('Failed to fetch data. Please try again.');
@@ -317,7 +358,6 @@ export default function GstInvoice() {
       if (selectedYear === 'All') {
         return data;
       }
-      // Filter only by year
       return data.filter(item => {
         const purchaseDate = item.purchaseDate || 
                              (item.payment && item.payment.paymentDate) || 
@@ -432,10 +472,10 @@ export default function GstInvoice() {
       pdf.roundedRect(20, 130, 170, 10, 2, 2, 'F');
       pdf.text('Note: The amount shown below is inclusive of 18% GST.', 25, 137);
       
-      // Define table dimensions - adjusted column widths to fit headers
+      // Define table dimensions
       const tableStartX = 20;
       const tableStartY = 145;
-      const colWidths = [80, 50, 40]; // Width for each column - increased width for amount columns
+      const colWidths = [80, 50, 40];
       const tableWidth = colWidths.reduce((sum, width) => sum + width, 0);
       const rowHeight = 10;
       
@@ -449,9 +489,9 @@ export default function GstInvoice() {
       pdf.line(tableStartX + colWidths[0], tableStartY, tableStartX + colWidths[0], tableStartY + rowHeight);
       pdf.line(tableStartX + colWidths[0] + colWidths[1], tableStartY, tableStartX + colWidths[0] + colWidths[1], tableStartY + rowHeight);
       
-      // Table header text - using smaller font size to fit text
+      // Table header text
       pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(10); // Smaller font size for headers
+      pdf.setFontSize(10);
       pdf.setTextColor(255, 255, 255);
       pdf.text('Description', tableStartX + 5, tableStartY + 7);
       pdf.text('Amount without GST(INR)', tableStartX + colWidths[0] + colWidths[1]/2, tableStartY + 7, { align: 'center' });
@@ -460,7 +500,7 @@ export default function GstInvoice() {
       // Reset text color and font
       pdf.setTextColor(0, 0, 0);
       pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(11); // Reset font size for content
+      pdf.setFontSize(11);
       
       let currentY = tableStartY + rowHeight;
       
@@ -480,14 +520,18 @@ export default function GstInvoice() {
       } else if (type === 'Video Syllabus') {
         description = `Video Syllabus: ${purchaseData.syllabusTitle || 'Video Material'}`;
         price = purchaseData.paymentAmount;
+      } else if (type === 'Super User Subscription') {
+        const months = purchaseData.subscriptionMonth || 'N/A';
+        description = `Super User Subscription (${months} Month${months !== '1' ? 's' : ''})`;
+        price = purchaseData.paymentAmount;
       }
       
       // Ensure price is a valid number
       const priceValue = parseFloat(price) || 0;
       
-      // Calculate amount without GST (82% of total amount)
+      // Calculate amount without GST (82% of total amount, since 18% GST is included)
       const priceWithoutGST = (priceValue * 0.82).toFixed(2);
-      const priceWithGST = priceValue.toFixed(2); // Format the price with GST
+      const priceWithGST = priceValue.toFixed(2);
       
       // Function to wrap text and return height needed
       const wrapText = (text, maxWidth) => {
@@ -511,13 +555,13 @@ export default function GstInvoice() {
           lines.push(line.trim());
         }
         
-        return { lines, height: lines.length * 7 }; // 7 is the line height
+        return { lines, height: lines.length * 7 };
       };
       
       // Wrap description text and calculate row height needed
-      const maxDescWidth = colWidths[0] - 10; // Leaving 5px padding on each side
+      const maxDescWidth = colWidths[0] - 10;
       const wrappedDesc = wrapText(description, maxDescWidth);
-      const contentRowHeight = Math.max(wrappedDesc.height, rowHeight); // Minimum row height
+      const contentRowHeight = Math.max(wrappedDesc.height, rowHeight);
       
       // Draw cell borders for content row
       pdf.setDrawColor(0, 0, 0);
@@ -535,14 +579,14 @@ export default function GstInvoice() {
         pdf.text(wrappedDesc.lines[i], tableStartX + 5, currentY + 7 + (i * 7));
       }
       
-      // Fill amount cells (centered vertically if the description wraps to multiple lines)
+      // Fill amount cells
       const amountY = currentY + (contentRowHeight / 2) + 3;
       pdf.text(priceWithoutGST, tableStartX + colWidths[0] + colWidths[1]/2, amountY, { align: 'center' });
       pdf.text(priceWithGST, tableStartX + colWidths[0] + colWidths[1] + colWidths[2]/2, amountY, { align: 'center' });
       
       currentY += contentRowHeight;
       
-      // Additional info based on type (adding as new rows in the table)
+      // Additional info based on type
       if (type === 'Live Test' && purchaseData.examDate) {
         pdf.rect(tableStartX, currentY, tableWidth, rowHeight);
         pdf.text(`Exam Date: ${purchaseData.examDate}`, tableStartX + 5, currentY + 7);
@@ -561,6 +605,26 @@ export default function GstInvoice() {
         if (purchaseData.syllabusCategory) {
           pdf.rect(tableStartX, currentY, tableWidth, rowHeight);
           pdf.text(`Category: ${purchaseData.syllabusCategory}`, tableStartX + 5, currentY + 7);
+          currentY += rowHeight;
+        }
+      } else if (type === 'Super User Subscription') {
+        // Add subscription details
+        if (purchaseData.subscriptionTotalDays) {
+          pdf.rect(tableStartX, currentY, tableWidth, rowHeight);
+          pdf.text(`Total Days: ${purchaseData.subscriptionTotalDays} days`, tableStartX + 5, currentY + 7);
+          currentY += rowHeight;
+        }
+        
+        if (purchaseData.subscriptionDiscount && parseFloat(purchaseData.subscriptionDiscount) > 0) {
+          pdf.rect(tableStartX, currentY, tableWidth, rowHeight);
+          pdf.text(`Discount Applied: ${purchaseData.subscriptionDiscount}%`, tableStartX + 5, currentY + 7);
+          currentY += rowHeight;
+        }
+        
+        if (purchaseData.expiryDate) {
+          pdf.rect(tableStartX, currentY, tableWidth, rowHeight);
+          const expiryDate = new Date(purchaseData.expiryDate).toLocaleDateString('en-IN');
+          pdf.text(`Valid Until: ${expiryDate}`, tableStartX + 5, currentY + 7);
           currentY += rowHeight;
         }
       }
@@ -600,10 +664,8 @@ export default function GstInvoice() {
           format: 'a4'
         });
         
-        // Generate the invoice page
         generateInvoicePage(pdf, purchaseData, type);
         
-        // Generate filename
         const customerName = purchaseData.name || 
                             purchaseData.candidateName || 
                             'Customer';
@@ -618,16 +680,14 @@ export default function GstInvoice() {
         );
         const purchaseDateStr = purchaseDate.toISOString().split('T')[0];
         
-        const filename = `Invoice_${type.replace(' ', '')}_${customerName.replace(/\s+/g, '_')}_${shortId}_${purchaseDateStr}.pdf`;
+        const filename = `Invoice_${type.replace(/\s+/g, '')}_${customerName.replace(/\s+/g, '_')}_${shortId}_${purchaseDateStr}.pdf`;
         
-        // Save the PDF
         pdf.save(filename);
         
-        // Resolve after a short delay to avoid browser freezing
         setTimeout(() => resolve(), 100);
       } catch (error) {
         console.error('Error generating invoice:', error);
-        resolve(); // Still resolve to continue with other invoices
+        resolve();
       }
     });
   };
@@ -644,27 +704,21 @@ export default function GstInvoice() {
         setProcessedInvoices(0);
         setTotalInvoices(filteredData.length);
         
-        // Process each invoice
         for (let i = 0; i < filteredData.length; i++) {
-          // Add new page if not the first invoice
           if (i > 0) {
             pdf.addPage();
           }
           
           const item = filteredData[i];
-          
-          // Generate the full invoice for this customer using the same format as individual invoices
           generateInvoicePage(pdf, item, item.type);
           
-          // Update progress
           setProcessedInvoices(i + 1);
           setProgress(Math.round(((i + 1) / filteredData.length) * 100));
         }
         
-        // Generate filename for the combined PDF
         const monthYearText = month === 'All' ? 'AllMonths' : month;
         const yearText = year === 'All' ? 'AllYears' : year;
-        const fileTypeText = fileType === 'All' ? 'AllTypes' : fileType.replace(' ', '');
+        const fileTypeText = fileType === 'All' ? 'AllTypes' : fileType.replace(/\s+/g, '');
         
         const filename = `Combined_Invoices_${fileTypeText}_${monthYearText}_${yearText}.pdf`;
         pdf.save(filename);
@@ -682,9 +736,7 @@ export default function GstInvoice() {
     setProcessedInvoices(0);
     
     let filteredData = [];
-    const selectedMonthIndex = monthOptions.indexOf(month);
     
-    // Prepare data based on file type
     if (fileType === 'Live Test' || fileType === 'All') {
       const filteredLiveTest = filterByMonth(liveTestData, month, year);
       filteredData = [...filteredData, ...filteredLiveTest.map(item => ({ ...item, type: 'Live Test' }))];
@@ -705,22 +757,23 @@ export default function GstInvoice() {
       filteredData = [...filteredData, ...filteredVideoSyllabus.map(item => ({ ...item, type: 'Video Syllabus' }))];
     }
     
+    if (fileType === 'Super User Subscription' || fileType === 'All') {
+      const filteredSuperUser = filterByMonth(superUserData, month, year);
+      filteredData = [...filteredData, ...filteredSuperUser.map(item => ({ ...item, type: 'Super User Subscription' }))];
+    }
+    
     setTotalInvoices(filteredData.length);
     
     try {
-      // Add a small delay so the UI can update
       await new Promise(resolve => setTimeout(resolve, 100));
       
       if (downloadMode === 'combined' && filteredData.length > 0) {
-        // Generate a single combined PDF with multiple full-page invoices
         await generateCombinedInvoicePDF(filteredData);
       } else {
-        // Generate individual PDFs
         for (let i = 0; i < filteredData.length; i++) {
           const item = filteredData[i];
           await generateIndividualInvoice(item, item.type);
           
-          // Update progress
           setProcessedInvoices(i + 1);
           setProgress(Math.round(((i + 1) / filteredData.length) * 100));
         }
@@ -789,6 +842,20 @@ export default function GstInvoice() {
     
     return {
       count: filteredVideoSyllabus.length,
+      total
+    };
+  };
+
+  const getSuperUserStats = () => {
+    const filteredSuperUser = filterByMonth(superUserData, month, year);
+    
+    const total = filteredSuperUser.reduce((acc, item) => {
+      const amount = parseFloat(item.paymentAmount);
+      return acc + (isNaN(amount) ? 0 : amount);
+    }, 0);
+    
+    return {
+      count: filteredSuperUser.length,
       total
     };
   };
@@ -876,14 +943,14 @@ export default function GstInvoice() {
       {(fileType && month) && (
         <div>
           <div className="row mb-4">
-            <div className="col-md-3">
+            <div className="col-md-2">
               <div style={statBoxStyle}>
-                <h6>Live Tests</h6>
+                <h6 style={{fontSize: '13px'}}>Live Tests</h6>
                 {fileType === 'Live Test' || fileType === 'All' ? (
                   <div className="mt-2">
                     <strong>{getLiveTestStats().count}</strong> purchases
                     <br />
-                    <strong>₹{getLiveTestStats().total.toFixed(2)}</strong> total
+                    <strong>₹{getLiveTestStats().total.toFixed(2)}</strong>
                   </div>
                 ) : (
                   <div className="text-muted">Not selected</div>
@@ -891,14 +958,14 @@ export default function GstInvoice() {
               </div>
             </div>
             
-            <div className="col-md-3">
+            <div className="col-md-2">
               <div style={statBoxStyle}>
-                <h6>Practice Tests</h6>
+                <h6 style={{fontSize: '13px'}}>Practice Tests</h6>
                 {fileType === 'Practice Test' || fileType === 'All' ? (
                   <div className="mt-2">
                     <strong>{getPracticeTestStats().count}</strong> purchases
                     <br />
-                    <strong>₹{getPracticeTestStats().total.toFixed(2)}</strong> total
+                    <strong>₹{getPracticeTestStats().total.toFixed(2)}</strong>
                   </div>
                 ) : (
                   <div className="text-muted">Not selected</div>
@@ -906,14 +973,14 @@ export default function GstInvoice() {
               </div>
             </div>
             
-            <div className="col-md-3">
+            <div className="col-md-2">
               <div style={statBoxStyle}>
-                <h6>Syllabus PDFs</h6>
+                <h6 style={{fontSize: '13px'}}>Syllabus PDFs</h6>
                 {fileType === 'Syllabus PDF' || fileType === 'All' ? (
                   <div className="mt-2">
                     <strong>{getSyllabusPdfStats().count}</strong> purchases
                     <br />
-                    <strong>₹{getSyllabusPdfStats().total.toFixed(2)}</strong> total
+                    <strong>₹{getSyllabusPdfStats().total.toFixed(2)}</strong>
                   </div>
                 ) : (
                   <div className="text-muted">Not selected</div>
@@ -923,12 +990,27 @@ export default function GstInvoice() {
 
             <div className="col-md-3">
               <div style={statBoxStyle}>
-                <h6>Video Syllabus</h6>
+                <h6 style={{fontSize: '13px'}}>Video Syllabus</h6>
                 {fileType === 'Video Syllabus' || fileType === 'All' ? (
                   <div className="mt-2">
                     <strong>{getVideoSyllabusStats().count}</strong> purchases
                     <br />
-                    <strong>₹{getVideoSyllabusStats().total.toFixed(2)}</strong> total
+                    <strong>₹{getVideoSyllabusStats().total.toFixed(2)}</strong>
+                  </div>
+                ) : (
+                  <div className="text-muted">Not selected</div>
+                )}
+              </div>
+            </div>
+
+            <div className="col-md-3">
+              <div style={statBoxStyle}>
+                <h6 style={{fontSize: '13px'}}>Super User</h6>
+                {fileType === 'Super User Subscription' || fileType === 'All' ? (
+                  <div className="mt-2">
+                    <strong>{getSuperUserStats().count}</strong> purchases
+                    <br />
+                    <strong>₹{getSuperUserStats().total.toFixed(2)}</strong>
                   </div>
                 ) : (
                   <div className="text-muted">Not selected</div>
