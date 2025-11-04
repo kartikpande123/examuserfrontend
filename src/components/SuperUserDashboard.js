@@ -91,6 +91,12 @@ export default function SuperUserDashboard() {
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    // Scroll to top when component mounts
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    fetchSubscriptions();
+  }, []);
   
   // User registration states
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);

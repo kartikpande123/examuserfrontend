@@ -15,6 +15,9 @@ const VideoSyllabusDashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Scroll to top when component mounts
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
     const fetchSyllabi = async () => {
       try {
         setIsLoading(true);
