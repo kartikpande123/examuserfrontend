@@ -62,7 +62,7 @@ const ExamResults = () => {
               results: selectedExamData.candidates.map(candidate => ({
                 ...candidate,
                 candidateName: candidate.candidateName,
-                registrationNumber: candidate.registrationNumber,
+                registrationNumber: candidate.registrationId, // Fixed: Use registrationId from API
                 correctAnswers: candidate.correctAnswers,
                 wrongAnswers: candidate.wrongAnswers,
                 skippedQuestions: candidate.skippedQuestions,
@@ -95,10 +95,14 @@ const ExamResults = () => {
   useEffect(() => {
     if (!results) return;
 
-    const filtered = results.results.filter(result => 
-      result.candidateName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      result.registrationNumber.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filtered = results.results.filter(result => {
+      const searchLower = searchTerm.toLowerCase();
+      const candidateName = result.candidateName || '';
+      const registrationNumber = result.registrationNumber || '';
+      
+      return candidateName.toLowerCase().includes(searchLower) ||
+             registrationNumber.toLowerCase().includes(searchLower);
+    });
     setFilteredResults(filtered);
   }, [searchTerm, results]);
 
@@ -246,7 +250,7 @@ const ExamResults = () => {
                 <tbody>
                   {filteredResults.length > 0 ? (
                     filteredResults.map((result, index) => (
-                      <tr key={result.registrationNumber}>
+                      <tr key={`${result.registrationNumber}_${index}`}>
                         <td className="fw-bold" style={{ padding: '1rem' }}>#{index + 1}</td>
                         <td>
                           <div className="fw-bold">{result.candidateName}</div>

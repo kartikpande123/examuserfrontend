@@ -125,7 +125,7 @@ const FindWinner = () => {
   const findUserRank = (topThree, regNo) => {
     for (const examId in topThree) {
       const rankIndex = topThree[examId].findIndex(
-        candidate => candidate.registrationNumber === regNo
+        candidate => candidate.registrationId === regNo // Fixed: Use registrationId from API
       );
       if (rankIndex !== -1) {
         return {
