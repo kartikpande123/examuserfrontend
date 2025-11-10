@@ -12,12 +12,12 @@ import {
   Play,
   Crown,
   PlayCircle,
+  Medal
 } from "lucide-react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import logo from "../Images/LOGO.jpg";
 import "bootstrap/dist/js/bootstrap.bundle.min";
 import API_BASE_URL from "./ApiConfig";
-import WelcomePopup from "./WelcomePopup";
 
 const styles = `
   .dashboard-container {
@@ -537,27 +537,9 @@ const Dashboard = () => {
   const [exam, setExam] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [temporarilyHidden, setTemporarilyHidden] = useState(false);
-  const [showPopup, setShowPopup] = useState(false);
   const [isExamExpired, setIsExamExpired] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const hasVisited = localStorage.getItem("hasVisited");
-    if (!hasVisited) {
-      setShowPopup(true);
-      localStorage.setItem("hasVisited", "true");
-    }
-
-    const clearLocalStorageOnClose = () => {
-      localStorage.removeItem("hasVisited");
-    };
-    window.addEventListener("beforeunload", clearLocalStorageOnClose);
-
-    return () => {
-      window.removeEventListener("beforeunload", clearLocalStorageOnClose);
-    };
-  }, []);
 
   useEffect(() => {
     fetchNotifications();
@@ -696,9 +678,9 @@ const Dashboard = () => {
                 style={{ fontSize: "16px" }}
               >
                 <NavItem
-                  to="/practiceexamentry"
-                  icon={<Book size={20} />}
-                  text="My Practice Test"
+                  to="/rewards"
+                  icon={<Medal size={20} />}
+                  text="Rewards"
                 />
                 <NavItem
                   to="/upcomingexams"
@@ -727,8 +709,6 @@ const Dashboard = () => {
             </div>
           </div>
         </nav>
-
-        {showPopup && <WelcomePopup />}
 
         <div className="container main-content">
           <div className="dashboard-header">

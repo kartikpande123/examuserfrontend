@@ -13,7 +13,7 @@ import AboutUs from './components/AboutUs';
 import QAList from './components/ExamKeyAnswers';
 import ExamKeyAnswer from './components/ExamKeyAnswers';
 import ExamResults from './components/Results';
-import WelcomePopup from './components/WelcomePopup';
+import WelcomePopup from './components/Rewards.js';
 import TermsAndConditions from './components/TermsAndCondition';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import CancellationPolicy from './components/CancelationPloicy';
@@ -65,6 +65,7 @@ import AdminSuperUserDashboard from './components/AdminSuperUserDashboard.js';
 import AdminSuperUserPurchasers from './components/AdminSuperUserPurchasers.js';
 import TutorialDashboard from './components/TutorialDashboard.js';
 import AdminAddTut from './components/AdminAddTut.js';
+import Rewards from './components/Rewards.js';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -84,6 +85,7 @@ function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Dashboard />} />
+          <Route path="/rewards" element={<Rewards />} />
           <Route path="notifications" element={<Notifications />} />
           <Route path="help" element={<Help />} />
           <Route path="examform" element={<ExamRegistrationForm />} />
