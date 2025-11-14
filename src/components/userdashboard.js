@@ -28,6 +28,8 @@ const styles = `
   .professional-navbar {
     background-color: #1a3b5d;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    position: relative;
+    z-index: 1040;
   }
 
   .brand-logo {
@@ -115,6 +117,7 @@ const styles = `
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
     position: relative;
     overflow: hidden;
+    z-index: 1;
   }
 
   .tutorial-link::before {
@@ -443,6 +446,8 @@ const styles = `
   .navbar-toggler {
     margin-left: auto;
     border: none;
+    position: relative;
+    z-index: 1050;
   }
 
   .navbar-toggler-icon {
@@ -497,7 +502,7 @@ const styles = `
       margin-left: auto;
       padding: 0.25rem 0.5rem;
       position: relative;
-      z-index: 1;
+      z-index: 1050;
     }
 
     .navbar-collapse {
@@ -505,6 +510,8 @@ const styles = `
       background-color: #1a3b5d;
       border-radius: 8px;
       margin-top: 0.5rem;
+      position: relative;
+      z-index: 1045;
     }
 
     .navbar-nav {
