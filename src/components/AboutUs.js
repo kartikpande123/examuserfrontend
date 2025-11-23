@@ -136,7 +136,6 @@ const AboutUs = () => {
                 <Phone className="text-primary" size={24} />
                 <div>
                   <p className="mb-0">+91 6360785195</p>
-                  <p className="mb-0">+91 9482759409</p>
                 </div>
               </div>
               <div className="d-flex align-items-center gap-3">
