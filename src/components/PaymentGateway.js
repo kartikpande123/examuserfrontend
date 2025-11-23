@@ -845,7 +845,7 @@ Privacy Policy
       pdf.setFont('helvetica', 'italic');
       pdf.setFontSize(10);
       pdf.text('Thank you for your payment. This is a computer-generated invoice.', 105, 272, { align: 'center' });
-      pdf.text('For any queries, please contact +91 6360785195 or +91 9482759409', 105, 279, { align: 'center' });
+      pdf.text('For any queries, please contact +91 6360785195', 105, 279, { align: 'center' });
       pdf.text('You can reach us through the Help section as well.', 105, 286, { align: 'center' });
   
       const filename = `Invoice_${formData.candidateName || 'Candidate'}_${paymentDetails.paymentId?.substring(0, 6)}.pdf`;
@@ -1054,7 +1054,7 @@ Privacy Policy
             <h5 className="alert-heading">Having trouble downloading your hall ticket?</h5>
             <p className="mb-0">
               <ul className="mb-0">
-                <li>Contact us at +91 6360785195, +91 9482759409</li>
+                <li>Contact us at +91 6360785195</li>
                 <li>Keep your payment screenshot ready when seeking help</li>
                 <li>Visit our help section for additional support</li>
               </ul>
