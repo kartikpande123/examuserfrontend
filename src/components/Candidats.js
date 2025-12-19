@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { format, parse } from 'date-fns';
+import React, { useEffect, useState, useRef } from 'react';
+import { Card, Table, Badge, Spinner, Modal, Form } from 'react-bootstrap';
+import { format } from 'date-fns';
 import API_BASE_URL from './ApiConfig';
 
 const Candidates = () => {
@@ -9,6 +10,9 @@ const Candidates = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
+
+  const topScrollRef = useRef(null);
+  const tableScrollRef = useRef(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -27,15 +31,7 @@ const Candidates = () => {
           examsRes.json()
         ]);
 
-        const formattedCandidates = candidatesData.candidates.map(candidate => ({
-          ...candidate,
-          dob: candidate.dob ? new Date(candidate.dob) : null,
-          examDate: candidate.examDate,
-          examStartTime: candidate.examStartTime,
-          examEndTime: candidate.examEndTime
-        }));
-
-        setCandidates(formattedCandidates);
+        setCandidates(candidatesData.candidates);
         setExams(examsData.data);
         setLoading(false);
       } catch (err) {
@@ -47,176 +43,223 @@ const Candidates = () => {
     fetchData();
   }, []);
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Invalid Date';
-    try {
-      const date = new Date(dateString);
-      return format(date, 'dd/MM/yyyy');
-    } catch {
-      return 'Invalid Date';
+  // 🔄 Sync top & bottom horizontal scroll
+  const syncScroll = (source) => {
+    if (source === 'top') {
+      tableScrollRef.current.scrollLeft = topScrollRef.current.scrollLeft;
+    } else {
+      topScrollRef.current.scrollLeft = tableScrollRef.current.scrollLeft;
     }
   };
 
-  const formatExamDateTime = (examDate, startTime, endTime) => {
-    if (!examDate || !startTime || !endTime) return 'Schedule not set';
-    try {
-      const formattedDate = format(new Date(examDate), 'dd/MM/yyyy');
-      return `${formattedDate} (${startTime} - ${endTime})`;
-    } catch {
-      return 'Invalid Schedule';
-    }
+  const formatDate = (date) => {
+    if (!date) return '—';
+    return format(new Date(date), 'dd/MM/yyyy');
+  };
+
+  const formatExamDateTime = (examDate, start, end) => {
+    if (!examDate || !start || !end) return 'Not Scheduled';
+    return `${format(new Date(examDate), 'dd/MM/yyyy')} (${start} - ${end})`;
   };
 
   const filteredCandidates = selectedExam
-    ? candidates.filter(candidate => candidate.exam === selectedExam)
+    ? candidates.filter(c => c.exam === selectedExam)
     : candidates;
-
-  const PhotoModal = ({ photo, onClose }) => (
-    <div 
-      className="modal fade show" 
-      style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}
-      onClick={onClose}
-    >
-      <div className="modal-dialog modal-dialog-centered">
-        <div className="modal-content">
-          <div className="modal-header">
-            <h5 className="modal-title">Candidate Photo</h5>
-            <button type="button" className="btn-close" onClick={onClose}></button>
-          </div>
-          <div className="modal-body text-center">
-            <img
-              src={photo}
-              alt="Candidate"
-              style={{ maxWidth: '100%', height: 'auto', maxHeight: '500px' }}
-              className="img-fluid rounded"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center min-h-screen">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
+      <div className="d-flex justify-content-center align-items-center vh-100">
+        <Spinner animation="border" variant="primary" />
       </div>
     );
   }
 
   if (error) {
-    return (
-      <div className="alert alert-danger m-4" role="alert">
-        Error: {error}
-      </div>
-    );
+    return <div className="alert alert-danger m-4">{error}</div>;
   }
 
   return (
-    <div className="container-fluid p-4">
-      <div className="card shadow border border-2">
-        <div className="card-header bg-primary text-white py-3">
-          <div className="d-flex justify-content-between align-items-center">
-            <h2 className="mb-0 fs-4">Candidate List</h2>
-            <select 
-              className="form-select w-auto"
-              value={selectedExam}
-              onChange={(e) => setSelectedExam(e.target.value)}
-            >
-              <option value="">All Exams</option>
-              {exams.map(exam => (
-                <option key={exam.id} value={exam.id}>
-                  {exam.examDetails?.name || exam.id}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <div className="card-body p-0">
-          <div className="table-responsive" style={{ minWidth: '1400px' }}>
-            <table className="table table-hover table-bordered mb-0">
-              <thead className="table-light">
-                <tr className="text-center">
-                  <th style={{ width: '50px' }} className="px-4 py-3 border-end">#</th>
-                  <th style={{ width: '80px' }} className="px-4 py-3 border-end">Photo</th>
-                  <th style={{ width: '180px' }} className="px-4 py-3 border-end">Name</th>
-                  <th style={{ width: '160px' }} className="px-4 py-3 border-end">Registration Number</th>
-                  <th style={{ width: '120px' }} className="px-4 py-3 border-end">Date of Birth</th>
-                  <th style={{ width: '100px' }} className="px-4 py-3 border-end">Gender</th>
-                  <th style={{ width: '130px' }} className="px-4 py-3 border-end">Phone</th>
-                  <th style={{ width: '130px' }} className="px-4 py-3 border-end">District</th>
-                  <th style={{ width: '130px' }} className="px-4 py-3 border-end">State</th>
-                  <th style={{ width: '200px' }} className="px-4 py-3 border-end">Exam</th>
-                  <th style={{ width: '220px' }} className="px-4 py-3">Exam Schedule</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCandidates.map((candidate, index) => (
-                  <tr key={candidate.registrationNumber} className="text-center">
-                    <td className="px-4 py-3 border-end align-middle">{index + 1}</td>
-                    <td className="px-4 py-3 border-end align-middle">
-                      {candidate.photoUrl ? (
-                        <img
-                          src={candidate.photoUrl}
-                          alt={`${candidate.candidateName}'s photo`}
-                          className="rounded cursor-pointer"
-                          style={{ width: '60px', height: '60px', objectFit: 'cover', cursor: 'pointer' }}
-                          onClick={() => setSelectedPhoto(candidate.photoUrl)}
-                        />
-                      ) : (
-                        <div 
-                          className="bg-light rounded d-flex align-items-center justify-content-center text-muted mx-auto"
-                          style={{ width: '60px', height: '60px' }}
-                        >
-                          No Photo
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 border-end align-middle text-start">{candidate.candidateName}</td>
-                    <td className="px-4 py-3 border-end align-middle">
-                      <span className="badge bg-light text-dark border">
-                        {candidate.registrationNumber}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 border-end align-middle">
-                      {formatDate(candidate.dob)}
-                    </td>
-                    <td className="px-4 py-3 border-end align-middle">
-                      <span className={`badge ${candidate.gender === 'male' ? 'bg-info' : 'bg-danger'}`}>
-                        {candidate.gender}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 border-end align-middle">{candidate.phone}</td>
-                    <td className="px-4 py-3 border-end align-middle">{candidate.district}</td>
-                    <td className="px-4 py-3 border-end align-middle">{candidate.state}</td>
-                    <td className="px-4 py-3 border-end align-middle">
-                      <span className="badge bg-success" style={{ fontSize: '0.85rem', whiteSpace: 'normal', wordWrap: 'break-word' }}>
-                        {candidate.exam}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 align-middle" style={{ fontSize: '0.9rem' }}>
-                      {formatExamDateTime(
-                        candidate.examDate,
-                        candidate.examStartTime,
-                        candidate.examEndTime
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+    <div className="container-fluid p-4 candidate-admin">
 
-      {selectedPhoto && (
-        <PhotoModal 
-          photo={selectedPhoto} 
-          onClose={() => setSelectedPhoto(null)} 
-        />
-      )}
+      {/* ================= INTERNAL CSS ================= */}
+      <style>{`
+        /* TABLE SIZE & READABILITY */
+        .candidate-admin table {
+          font-size: 1.05rem;
+        }
+
+        .candidate-admin th {
+          padding: 18px 16px !important;
+          font-weight: 600;
+          white-space: nowrap;
+        }
+
+        .candidate-admin td {
+          padding: 20px 16px !important;
+          line-height: 1.7;
+          vertical-align: middle;
+        }
+
+        /* HEADER */
+        .candidate-admin .card-header {
+          padding: 20px 28px;
+        }
+
+        .candidate-admin .card-header h5 {
+          font-size: 1.3rem;
+          font-weight: 600;
+        }
+
+        /* BADGES */
+        .candidate-admin .badge {
+          font-size: 0.95rem;
+          padding: 6px 12px;
+        }
+
+        /* PHOTOS */
+        .candidate-admin img {
+          transition: transform 0.2s ease;
+        }
+
+        .candidate-admin img:hover {
+          transform: scale(1.07);
+        }
+
+        /* TOP SCROLLBAR */
+        .top-scroll {
+          height: 24px;
+          overflow-x: auto;
+          overflow-y: hidden;
+        }
+
+        .top-scroll::-webkit-scrollbar {
+          height: 16px;
+        }
+
+        .top-scroll::-webkit-scrollbar-thumb {
+          background: #4b4b4bff;
+          border-radius: 10px;
+        }
+
+        .top-scroll::-webkit-scrollbar-track {
+          background: #e9ecef;
+        }
+      `}</style>
+
+      <Card className="shadow border-0">
+        <Card.Header className="bg-primary text-white d-flex justify-content-between align-items-center">
+          <h5 className="mb-0">Candidate List</h5>
+
+          <Form.Select
+            size="lg"
+            style={{ width: '260px' }}
+            value={selectedExam}
+            onChange={(e) => setSelectedExam(e.target.value)}
+          >
+            <option value="">All Exams</option>
+            {exams.map(exam => (
+              <option key={exam.id} value={exam.id}>
+                {exam.examDetails?.name || exam.id}
+              </option>
+            ))}
+          </Form.Select>
+        </Card.Header>
+
+        {/* 🔝 TOP HORIZONTAL SCROLL */}
+        <div
+          ref={topScrollRef}
+          onScroll={() => syncScroll('top')}
+          className="top-scroll"
+        >
+          <div style={{ width: '1600px', height: '1px' }} />
+        </div>
+
+        {/* TABLE */}
+        <div
+          ref={tableScrollRef}
+          onScroll={() => syncScroll('table')}
+          className="table-responsive"
+        >
+          <Table bordered hover className="mb-0" style={{ minWidth: '1600px' }}>
+            <thead className="table-light text-center">
+              <tr>
+                <th>#</th>
+                <th>Photo</th>
+                <th>Name</th>
+                <th>Registration No</th>
+                <th>Date of Birth</th>
+                <th>Gender</th>
+                <th>Phone</th>
+                <th>District</th>
+                <th>State</th>
+                <th>Exam</th>
+                <th>Exam Schedule</th>
+              </tr>
+            </thead>
+
+            <tbody className="text-center">
+              {filteredCandidates.map((c, i) => (
+                <tr key={c.registrationNumber}>
+                  <td>{i + 1}</td>
+
+                  <td>
+                    {c.photoUrl ? (
+                      <img
+                        src={c.photoUrl}
+                        alt="candidate"
+                        width="70"
+                        height="70"
+                        className="rounded-circle border"
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => setSelectedPhoto(c.photoUrl)}
+                      />
+                    ) : (
+                      <Badge bg="secondary">N/A</Badge>
+                    )}
+                  </td>
+
+                  <td className="text-start fw-semibold">{c.candidateName}</td>
+
+                  <td>
+                    <Badge bg="light" text="dark">
+                      {c.registrationNumber}
+                    </Badge>
+                  </td>
+
+                  <td>{formatDate(c.dob)}</td>
+
+                  <td>
+                    <Badge bg={c.gender === 'male' ? 'info' : 'danger'}>
+                      {c.gender}
+                    </Badge>
+                  </td>
+
+                  <td>{c.phone}</td>
+                  <td>{c.district}</td>
+                  <td>{c.state}</td>
+
+                  <td>
+                    <Badge bg="success">{c.exam}</Badge>
+                  </td>
+
+                  <td>{formatExamDateTime(c.examDate, c.examStartTime, c.examEndTime)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </div>
+      </Card>
+
+      {/* PHOTO PREVIEW MODAL */}
+      <Modal show={!!selectedPhoto} onHide={() => setSelectedPhoto(null)} centered size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Candidate Photo</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="text-center">
+          <img src={selectedPhoto} alt="candidate" className="img-fluid rounded" />
+        </Modal.Body>
+      </Modal>
+
     </div>
   );
 };
