@@ -66,6 +66,20 @@ import AdminSuperUserPurchasers from './components/AdminSuperUserPurchasers.js';
 import TutorialDashboard from './components/TutorialDashboard.js';
 import AdminAddTut from './components/AdminAddTut.js';
 import Rewards from './components/Rewards.js';
+import AdminCourseDashboard from './components/AdminCourseDashboard.js';
+import AdminCourseCategory from './components/AdminCourseCategory.js';
+import AdminAddCourse from './components/AdminCourseAdd.js';
+import AdminCourseApllications from './components/AdminCourseApllications.js';
+import AdminCoursePayments from './components/AdminCoursePayments.js';
+import AdminCourseGmeet from './components/AdminCourseGmeet.js';
+import AdminCourseAllGmeets from './components/AdminCourseAllGmeets.js';
+import AdminCourseCandidates from './components/AdminCourseCandidates.js';
+import AdminCourseAttendance from './components/AdminCourseAttendace.js';
+import AdminCourseAttendanceTrack from './components/AdminCourseAttendanceTrack.js';
+import CourseDashboard from './components/CourseDashboard.js';
+import CourseStatusCheck from './components/CourseStatusCheck.js';
+import CourseGmeetFinder from './components/CourseGmeetFinder.js';
+import CourseDetails from './components/CourseDetails.js';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -118,6 +132,13 @@ function App() {
           <Route path="adminvideopurchase" element={<AdminVideoPurchasers />} />
           <Route path="superuser" element={<SuperUserDashboard />} />
           <Route path="tutorialdashboard" element={<TutorialDashboard />} />
+
+
+          
+          <Route path="coursedashboard" element={<CourseDashboard />} />
+          <Route path="coursestatuscheck" element={<CourseStatusCheck />} />
+          <Route path="coursegmeetfinder" element={<CourseGmeetFinder />} />
+          <Route path="/course/:id" element={<CourseDetails />} />
 
           {/* Admin Login - Public */}
           <Route path="adminlogin" element={<AdminLogin />} />
@@ -261,6 +282,56 @@ function App() {
           <Route path="/adminaddtut" element={
             <ProtectedRoute>
               <AdminAddTut/>
+            </ProtectedRoute>
+          } />
+          <Route path="/admincoursedashboard" element={
+            <ProtectedRoute>
+              <AdminCourseDashboard/>
+            </ProtectedRoute>
+          } />
+          <Route path="/coursecategory" element={
+            <ProtectedRoute>
+              <AdminCourseCategory/>
+            </ProtectedRoute>
+          } />
+          <Route path="/courseadd" element={
+            <ProtectedRoute>
+              <AdminAddCourse/>
+            </ProtectedRoute>
+          } />
+          <Route path="/courseapplicants" element={
+            <ProtectedRoute>
+              <AdminCourseApllications/>
+            </ProtectedRoute>
+          } />
+          <Route path="/coursepayments" element={
+            <ProtectedRoute>
+              <AdminCoursePayments/>
+            </ProtectedRoute>
+          } />
+          <Route path="/coursegmeets" element={
+            <ProtectedRoute>
+              <AdminCourseGmeet/>
+            </ProtectedRoute>
+          } />
+          <Route path="/courseallgmeets" element={
+            <ProtectedRoute>
+              <AdminCourseAllGmeets/>
+            </ProtectedRoute>
+          } />
+          <Route path="/coursecandidates" element={
+            <ProtectedRoute>
+              <AdminCourseCandidates/>
+            </ProtectedRoute>
+          } />
+          <Route path="/courseattendance" element={
+            <ProtectedRoute>
+              <AdminCourseAttendance/>
+            </ProtectedRoute>
+          } />
+          <Route path="/courseattendancetrack" element={
+            <ProtectedRoute>
+              <AdminCourseAttendanceTrack/>
             </ProtectedRoute>
           } />
         </Routes>

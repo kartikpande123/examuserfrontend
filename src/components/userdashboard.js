@@ -12,7 +12,8 @@ import {
   Play,
   Crown,
   PlayCircle,
-  Medal
+  Medal,
+  GraduationCap
 } from "lucide-react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import logo from "../Images/LOGO.jpg";
@@ -345,6 +346,11 @@ const styles = `
     background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(212, 175, 55, 0.03) 100%);
   }
 
+  .resource-card.courses {
+    border-top-color: #8b5cf6;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(139, 92, 246, 0.03) 100%);
+  }
+
   .resource-card-header {
     padding: 1.25rem;
     border-radius: 8px 8px 0 0;
@@ -376,6 +382,10 @@ const styles = `
     color: #d4af37;
   }
 
+  .resource-card.courses .resource-icon {
+    color: #8b5cf6;
+  }
+
   .resource-card-body {
     padding: 0 1.25rem 1.25rem;
     flex-grow: 1;
@@ -403,6 +413,19 @@ const styles = `
     margin-right: 0.3rem;
   }
 
+  .course-features {
+    color: #2d3748;
+    font-size: 0.9rem;
+    margin: 0 0 1.5rem 0;
+    line-height: 1.4;
+  }
+
+  .course-features span {
+    color: #8b5cf6;
+    font-weight: bold;
+    margin-right: 0.3rem;
+  }
+
   .resource-btn {
     background-color: #4e73df;
     color: white;
@@ -426,6 +449,12 @@ const styles = `
   .resource-card.premium .resource-btn {
     background-color: #d4af37;
     color: #2d3748;
+    font-weight: 600;
+  }
+
+  .resource-card.courses .resource-btn {
+    background-color: #8b5cf6;
+    color: white;
     font-weight: 600;
   }
 
@@ -640,6 +669,7 @@ const Dashboard = () => {
   const goToUpgradeNow = () => navigate("/superuser");
   const goTovideoDashboard = () => navigate("/videosyllabusdashboard");
   const goToTutorialDashboard = () => navigate("/tutorialdashboard");
+  const goToCourseDashboard = () => navigate("/coursedashboard");
 
   const unreadCount = notifications.filter((n) => !n.read).length;
   const displayCount = unreadCount > 3 ? "3+" : unreadCount;
@@ -849,6 +879,26 @@ const Dashboard = () => {
                     onClick={goToUpgradeNow}
                   >
                     Upgrade Now
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-12 col-md-3 col-lg-3">
+              <div className="resource-card courses">
+                <div className="resource-card-header">
+                  <GraduationCap size={24} className="resource-icon" />
+                  <h3>Course Dashboard</h3>
+                </div>
+                <div className="resource-card-body">
+                  <p className="course-features">
+                    <span>✓</span>Specialized certification courses. <span>✓</span>Expert-led training programs. <span>✓</span>Hands-on practical learning. <span>✓</span>Career advancement opportunities. Browse and purchase courses tailored to your goals!
+                  </p>
+                  <button 
+                    className="resource-btn" 
+                    onClick={goToCourseDashboard}
+                  >
+                    Browse Courses
                   </button>
                 </div>
               </div>
