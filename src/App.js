@@ -80,6 +80,7 @@ import CourseDashboard from './components/CourseDashboard.js';
 import CourseStatusCheck from './components/CourseStatusCheck.js';
 import CourseGmeetFinder from './components/CourseGmeetFinder.js';
 import CourseDetails from './components/CourseDetails.js';
+import HomeDashboard from './components/HomeDashboard.js';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -98,7 +99,8 @@ function App() {
       <div className="App">
         <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={<HomeDashboard />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/rewards" element={<Rewards />} />
           <Route path="notifications" element={<Notifications />} />
           <Route path="help" element={<Help />} />
