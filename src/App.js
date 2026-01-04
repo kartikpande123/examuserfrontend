@@ -1,6 +1,5 @@
 import './App.css';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Dashboard from './components/UserDashboard.js';
 import Notifications from './components/Notification';
 import Help from './components/Help';
 import ExamRegistrationForm from './components/ExamForm';
@@ -100,7 +99,6 @@ function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<HomeDashboard />} />
-          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/rewards" element={<Rewards />} />
           <Route path="notifications" element={<Notifications />} />
           <Route path="help" element={<Help />} />
