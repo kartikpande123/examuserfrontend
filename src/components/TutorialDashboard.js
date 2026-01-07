@@ -59,7 +59,7 @@ export default function TutorialDashboard() {
           <Container>
             <h1 style={styles.headerTitle}>Website Guide Tutorial</h1>
             <p style={styles.headerSubtitle}>
-              Learn how to use our website with these video tutorials
+              Learn how to use our website with these videos
             </p>
           </Container>
         </div>
