@@ -7,7 +7,7 @@ import {
   MapPin, 
   Building2, 
   Globe,
-  Calendar
+  Clock
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import API_BASE_URL from './ApiConfigCourse';
@@ -22,7 +22,7 @@ const CourseApplicationForm = ({ course }) => {
     city: '',
     state: '',
     pincode: '',
-    dob: ''
+    age: ''
   });
 
   const [loading, setLoading] = useState(false);
@@ -69,12 +69,14 @@ const CourseApplicationForm = ({ course }) => {
     let errorMessage = '';
     if (!formData.name.trim()) errorMessage = 'Name is required';
     if (!formData.phone.trim()) errorMessage = 'Phone number is required';
-    if (!/^\d{10}$/.test(formData.phone)) errorMessage = 'Invalid phone number';
+    if (!/^\d{10}$/.test(formData.phone)) errorMessage = 'Invalid phone number. Must be 10 digits';
     if (!formData.address.trim()) errorMessage = 'Address is required';
     if (!formData.city.trim()) errorMessage = 'City is required';
     if (!formData.state.trim()) errorMessage = 'State is required';
-    if (!/^\d{6}$/.test(formData.pincode)) errorMessage = 'Invalid pincode';
-    if (!formData.dob) errorMessage = 'Date of birth is required';
+    if (!/^\d{6}$/.test(formData.pincode)) errorMessage = 'Invalid pincode. Must be 6 digits';
+    if (!formData.age) errorMessage = 'Age is required';
+    const age = parseInt(formData.age);
+    if (isNaN(age) || age <= 0 || age > 120) errorMessage = 'Please enter a valid age (1-120)';
     
     if (errorMessage) {
       setError(errorMessage);
@@ -123,7 +125,7 @@ const CourseApplicationForm = ({ course }) => {
         ['Name:', applicationData.name],
         ['Email:', applicationData.email || 'N/A'],
         ['Phone:', applicationData.phone],
-        ['Date of Birth:', formatDate(applicationData.dob)],
+        ['Age:', applicationData.age],
         ['Address:', applicationData.address],
         ['City:', applicationData.city],
         ['State:', applicationData.state],
@@ -223,7 +225,7 @@ const CourseApplicationForm = ({ course }) => {
           city: '',
           state: '',
           pincode: '',
-          dob: ''
+          age: ''
         });
       } else {
         setError('Failed to submit application. Please try again.');
@@ -343,6 +345,7 @@ const CourseApplicationForm = ({ course }) => {
                     placeholder="Enter your phone number"
                     value={formData.phone}
                     onChange={handleChange}
+                    maxLength="10"
                     required
                   />
                   <label htmlFor="phone">
@@ -352,21 +355,24 @@ const CourseApplicationForm = ({ course }) => {
                 </div>
               </div>
 
-              {/* DOB */}
+              {/* Age */}
               <div className="col-md-6">
                 <div className="form-floating mb-3">
                   <input
-                    type="date"
+                    type="number"
                     className="form-control"
-                    id="dob"
-                    name="dob"
-                    value={formData.dob}
+                    id="age"
+                    name="age"
+                    placeholder="Enter your age"
+                    value={formData.age}
                     onChange={handleChange}
+                    min="1"
+                    max="120"
                     required
                   />
-                  <label htmlFor="dob">
-                    <Calendar className="me-2" size={16} style={{display: 'inline-block', verticalAlign: 'middle'}} />
-                    Date of Birth
+                  <label htmlFor="age">
+                    <Clock className="me-2" size={16} style={{display: 'inline-block', verticalAlign: 'middle'}} />
+                    Age
                   </label>
                 </div>
               </div>
@@ -442,6 +448,7 @@ const CourseApplicationForm = ({ course }) => {
                     placeholder="Enter your pincode"
                     value={formData.pincode}
                     onChange={handleChange}
+                    maxLength="6"
                     required
                   />
                   <label htmlFor="pincode">
