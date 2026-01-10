@@ -10,6 +10,7 @@ const PracticeTestQuestionManager = () => {
   const [question, setQuestion] = useState("");
   const [options, setOptions] = useState(["", "", "", ""]);
   const [correctAnswer, setCorrectAnswer] = useState("");
+  const [correctAnswerContext, setCorrectAnswerContext] = useState(""); // NEW STATE
   const [image, setImage] = useState(null);
   const [editIndex, setEditIndex] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -55,7 +56,7 @@ const PracticeTestQuestionManager = () => {
     try {
       setLoading(true);
       const response = await fetch(
-        `${API_BASE_URL}/api/practice-tests/${selectedCategory}/${selectedExamId}/questions`
+        `${API_BASE_URL}/api/practice/${selectedCategory}/${selectedExamId}/questions`
       );
       
       if (!response.ok) {
@@ -84,6 +85,7 @@ const PracticeTestQuestionManager = () => {
     setQuestion("");
     setOptions(["", "", "", ""]);
     setCorrectAnswer("");
+    setCorrectAnswerContext(""); // Reset context
     setImage(null);
     setEditIndex(null);
     
@@ -122,6 +124,7 @@ const PracticeTestQuestionManager = () => {
     formData.append("question", question);
     formData.append("options", JSON.stringify(options));
     formData.append("correctAnswer", correctAnswer);
+    formData.append("correctAnswerContext", correctAnswerContext); // Add context
   
     // If image exists, process it - add image compression
     if (image) {
@@ -198,20 +201,22 @@ const PracticeTestQuestionManager = () => {
     }
   };
   
-  // Add loading UI elements to the form
-  // Add this to your form section
-  {isUploading && (
-    <div className="upload-overlay">
-      <div className="spinner"></div>
-      <p>Uploading question and image...</p>
-    </div>
-  )}
+  // Upload overlay component
+  const UploadOverlay = () => {
+    return (
+      <div className="upload-overlay">
+        <div className="spinner"></div>
+        <p>Uploading question and image...</p>
+      </div>
+    );
+  };
 
   const handleEditQuestion = (index) => {
     const questionToEdit = questions[index];
     setQuestion(questionToEdit.question);
     setOptions(questionToEdit.options);
     setCorrectAnswer(questionToEdit.correctAnswer.toString());
+    setCorrectAnswerContext(questionToEdit.correctAnswerContext || ""); // Set context
     setImage(questionToEdit.imageUrl);
     setEditIndex(index);
 
@@ -411,6 +416,23 @@ const PracticeTestQuestionManager = () => {
         pdf.text(optionLines, margin + 20, yOffset);
         yOffset += (optionLines.length * lineHeight) + 2;
       });
+
+      // Add correct answer context if exists
+      if (q.correctAnswerContext && q.correctAnswerContext.trim() !== "") {
+        checkPageBreak();
+        pdf.setFont("helvetica", "italic");
+        pdf.setFontSize(10);
+        pdf.setTextColor(0, 102, 204); // Blue color for context
+        
+        const contextTitle = "Explanation:";
+        pdf.text(contextTitle, margin + 15, yOffset);
+        yOffset += lineHeight;
+        
+        pdf.setFont("helvetica", "normal");
+        const contextLines = pdf.splitTextToSize(q.correctAnswerContext, pageWidth - (margin * 2) - 25);
+        pdf.text(contextLines, margin + 20, yOffset);
+        yOffset += (contextLines.length * lineHeight) + lineHeight;
+      }
   
       // Add spacing between questions
       yOffset += lineHeight * 1.5;
@@ -435,6 +457,9 @@ const PracticeTestQuestionManager = () => {
   return (
     <div className="question-manager">
       <h1 className="title">Practice Test Question Manager</h1>
+
+      {/* Upload Overlay */}
+      {isUploading && <UploadOverlay />}
 
       {/* Confirmation Dialog */}
       {showConfirmDialog && (
@@ -533,30 +558,30 @@ const PracticeTestQuestionManager = () => {
               </div>
             )}
 
-<div className="options-section">
-  <div className="options-grid">
-    {options.map((option, index) => (
-      <div key={index} className="option-field">
-        <label>Option {index + 1}</label>
-        <input
-          ref={(el) => (inputRefs.current[index] = el)}
-          type="text"
-          value={option}
-          onChange={(e) =>
-            setOptions(
-              options.map((opt, idx) =>
-                idx === index ? e.target.value : opt
-              )
-            )
-          }
-          onKeyDown={(e) => handleKeyPress(e, index)}
-          placeholder={`Enter option ${index + 1}`}
-          className="styled-input"
-        />
-      </div>
-    ))}
-  </div>
-</div>
+            <div className="options-section">
+              <div className="options-grid">
+                {options.map((option, index) => (
+                  <div key={index} className="option-field">
+                    <label>Option {index + 1}</label>
+                    <input
+                      ref={(el) => (inputRefs.current[index] = el)}
+                      type="text"
+                      value={option}
+                      onChange={(e) =>
+                        setOptions(
+                          options.map((opt, idx) =>
+                            idx === index ? e.target.value : opt
+                          )
+                        )
+                      }
+                      onKeyDown={(e) => handleKeyPress(e, index)}
+                      placeholder={`Enter option ${index + 1}`}
+                      className="styled-input"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
 
             <label className="field-label">Select Correct Answer</label>
             <select
@@ -571,6 +596,16 @@ const PracticeTestQuestionManager = () => {
                 </option>
               ))}
             </select>
+
+            {/* Correct Answer Context Field */}
+            <label className="field-label">Correct Answer Context (Optional)</label>
+            <textarea
+              value={correctAnswerContext}
+              onChange={(e) => setCorrectAnswerContext(e.target.value)}
+              placeholder="Explain why this answer is correct (optional)..."
+              rows="2"
+              className="styled-textarea"
+            />
 
             <div className="button-group">
               <button onClick={handleAddOrUpdateQuestion} className="submit-button">
@@ -612,6 +647,15 @@ const PracticeTestQuestionManager = () => {
                             </p>
                           ))}
                         </div>
+                        
+                        {/* Display Correct Answer Context if exists */}
+                        {q.correctAnswerContext && (
+                          <div className="context-section">
+                            <strong>Explanation:</strong>
+                            <p className="context-text">{q.correctAnswerContext}</p>
+                          </div>
+                        )}
+                        
                         {q.imageUrl && (
                           <img src={q.imageUrl} alt="Question" className="thumbnail" />
                         )}

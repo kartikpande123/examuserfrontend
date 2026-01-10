@@ -49,9 +49,9 @@ const PracticeMainExam = () => {
                 setTimeRemaining(null);
             }
 
-            // Use the new API endpoint structure with path parameters
+            // Use the new API endpoint with /api/practice
             const response = await axios.get(
-              `${API_BASE_URL}/api/practice-tests/${examInfo.examDetails.category}/${examInfo.examDetails.title}/questions`
+              `${API_BASE_URL}/api/practice/${encodeURIComponent(examInfo.examDetails.category)}/${encodeURIComponent(examInfo.examDetails.title)}/questions`
             );
 
             // Adjust to match the new API response structure
@@ -265,6 +265,27 @@ const PracticeMainExam = () => {
       marginTop: '15px',
       textAlign: 'center',
       fontWeight: 'bold'
+    },
+    // New style for context container
+    contextContainer: {
+      padding: '15px',
+      marginTop: '15px',
+      backgroundColor: '#f0f9ff',
+      borderLeft: '4px solid #3b82f6',
+      borderRadius: '8px',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+    },
+    contextTitle: {
+      color: '#1e40af',
+      fontWeight: '600',
+      marginBottom: '8px',
+      fontSize: '1rem'
+    },
+    contextText: {
+      color: '#374151',
+      lineHeight: '1.5',
+      fontSize: '0.95rem',
+      marginBottom: '0'
     }
   };
 
@@ -495,18 +516,34 @@ const PracticeMainExam = () => {
             </div>
 
             {showAnswerFeedback && (
-              <div 
-                style={{
-                  ...styles.feedbackMessage,
-                  backgroundColor: isAnswerCorrect ? 'rgba(46, 204, 113, 0.1)' : 'rgba(231, 76, 60, 0.1)',
-                  color: isAnswerCorrect ? '#2ecc71' : '#e74c3c',
-                  border: `1px solid ${isAnswerCorrect ? '#2ecc71' : '#e74c3c'}`
-                }}
-              >
-                {isAnswerCorrect ? (
-                  <><i className="fas fa-check-circle me-2"></i>Correct! Well done!</>
-                ) : (
-                  <><i className="fas fa-times-circle me-2"></i>Incorrect! The correct answer is {String.fromCharCode(65 + currentQuestion.correctAnswer)}.</>
+              <div>
+                {/* Feedback Message */}
+                <div 
+                  style={{
+                    ...styles.feedbackMessage,
+                    backgroundColor: isAnswerCorrect ? 'rgba(46, 204, 113, 0.1)' : 'rgba(231, 76, 60, 0.1)',
+                    color: isAnswerCorrect ? '#2ecc71' : '#e74c3c',
+                    border: `1px solid ${isAnswerCorrect ? '#2ecc71' : '#e74c3c'}`
+                  }}
+                >
+                  {isAnswerCorrect ? (
+                    <><i className="fas fa-check-circle me-2"></i>Correct! Well done!</>
+                  ) : (
+                    <><i className="fas fa-times-circle me-2"></i>Incorrect! The correct answer is {String.fromCharCode(65 + currentQuestion.correctAnswer)}.</>
+                  )}
+                </div>
+
+                {/* Correct Answer Context (only show if exists) */}
+                {currentQuestion.correctAnswerContext && (
+                  <div style={styles.contextContainer}>
+                    <div style={styles.contextTitle}>
+                      <i className="fas fa-lightbulb me-2"></i>
+                      Explanation
+                    </div>
+                    <p style={styles.contextText}>
+                      {currentQuestion.correctAnswerContext}
+                    </p>
+                  </div>
                 )}
               </div>
             )}
