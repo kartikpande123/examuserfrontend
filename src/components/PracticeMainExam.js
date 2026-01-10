@@ -695,7 +695,7 @@ const PracticeMainExam = () => {
           <button 
             className="btn btn-primary" 
             style={styles.modalButton}
-            onClick={() => window.location.href = '/practicetestdashboard'}
+            onClick={() => window.location.href = '/'}
           >
             <i className="fas fa-home me-2"></i>
             Return to Dashboard
