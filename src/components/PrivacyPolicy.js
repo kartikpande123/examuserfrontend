@@ -4,7 +4,12 @@ const PrivacyPolicy = () => {
   return (
     <div
       className="container my-5"
-      style={{ fontFamily: 'Arial, sans-serif', color: '#333' }}
+      style={{
+        fontFamily: 'Arial, sans-serif',
+        color: '#333',
+        maxWidth: '900px',
+        margin: '0 auto'
+      }}
     >
       <h1
         className="text-center mb-4"
@@ -13,72 +18,115 @@ const PrivacyPolicy = () => {
           fontWeight: 'bold',
           borderBottom: '3px solid #007BFF',
           display: 'inline-block',
-          paddingBottom: '8px',
+          paddingBottom: '8px'
         }}
       >
-        Privacy Policy
+        Privacy Policy – ARN Student Portal
       </h1>
+
       <div
         className="card shadow-lg p-4"
         style={{
           backgroundColor: '#f9f9f9',
           borderRadius: '10px',
-          border: '1px solid #ddd',
+          border: '1px solid #ddd'
         }}
       >
-        <ol style={{ lineHeight: '2', paddingLeft: '20px' }}>
+        <p style={{ fontSize: '1.05rem' }}>
+          <strong>Company:</strong> KARNATAKA AYAN WHOLESALE SUPPLY ENTERPRICES <br />
+          <strong>Developer:</strong> AKBARSAB NADAF <br />
+          <strong>App Name:</strong> ARN Student Portal <br />
+          <strong>Country:</strong> India <br />
+          <strong>Contact Email:</strong> jubedakbar@gmail.com
+        </p>
+
+        <ol style={{ lineHeight: '1.9', paddingLeft: '20px' }}>
           <li>
-            <strong style={{ color: '#2c3e50', fontSize: '1.5rem' }}>Information We Collect</strong>
-            <p style={{ fontSize: '1.1rem' }}>
-              Personal Information: Name, email address, phone number, payment details, etc. <br />
-              Exam Data: Performance, answers, and scores. <br />
-              Technical Information: IP address, browser type, and cookies for website functionality.
+            <strong>Information We Collect</strong>
+            <p>
+              <b>Personal Information:</b> Name, email address, phone number, and payment details when users register or purchase exams. <br />
+              <b>Exam Data:</b> Answers, scores, and exam performance. <br />
+              <b>Technical Information:</b> Device type, IP address, OS version, and app usage data for security and performance.
             </p>
           </li>
+
           <li>
-            <strong style={{ color: '#2c3e50', fontSize: '1.5rem' }}>How We Use Your Information</strong>
-            <p style={{ fontSize: '1.1rem' }}>
-              To register and authenticate users. <br />
-              To conduct and manage online exams. <br />
-              To communicate updates, results, and notifications.
+            <strong>How We Use Your Information</strong>
+            <p>
+              • To register and identify users <br />
+              • To conduct and manage online exams <br />
+              • To process payments securely <br />
+              • To send exam updates, results, and notifications <br />
+              • To improve app performance and user experience
             </p>
           </li>
+
           <li>
-            <strong style={{ color: '#2c3e50', fontSize: '1.5rem' }}>Data Sharing</strong>
-            <p style={{ fontSize: '1.1rem' }}>
-              We do not share your personal information with third parties, except as required by law or with your consent.
+            <strong>Data Sharing</strong>
+            <p>
+              We do <b>not sell or share</b> user personal data with third parties. Data may only be shared:
+              <br />• With secure payment providers (Razorpay) for transactions
+              <br />• If required by law or legal authorities
             </p>
           </li>
+
           <li>
-            <strong style={{ color: '#2c3e50', fontSize: '1.5rem' }}>Data Security</strong>
-            <p style={{ fontSize: '1.1rem' }}>
-              We employ industry-standard security measures to protect your data. While we strive to safeguard your information, no system is completely secure.
+            <strong>Data Security</strong>
+            <p>
+              We use industry-standard security practices to protect your information. However, no digital platform is completely secure.
             </p>
           </li>
+
           <li>
-            <strong style={{ color: '#2c3e50', fontSize: '1.5rem' }}>User Rights</strong>
-            <p style={{ fontSize: '1.1rem' }}>
-              Access: Users can request access to their personal data. <br />
-              Rectification: Users can update or correct their data. <br />
-              Deletion: Users may request the deletion of their data, subject to legal and operational requirements.
+            <strong>User Rights</strong>
+            <p>
+              Users may request:
+              <br />• Access to their personal data
+              <br />• Correction of incorrect data
+              <br />• Deletion of their data (subject to legal requirements)
+              <br />
+              Requests can be sent to our contact email.
             </p>
           </li>
+
           <li>
-            <strong style={{ color: '#2c3e50', fontSize: '1.5rem' }}>Third-Party Services</strong>
-            <p style={{ fontSize: '1.1rem' }}>
-              We may use third-party payment gateways or analytics tools. These services have their own privacy policies.
+            <strong>Third-Party Services</strong>
+            <p>
+              Our app may use trusted third-party services such as:
+              <br />• Razorpay – Secure payment processing
+              <br />• Analytics / Crash reporting tools (if used)
+              <br />
+              These services have their own privacy policies.
             </p>
           </li>
+
           <li>
-            <strong style={{ color: '#2c3e50', fontSize: '1.5rem' }}>Retention of Data</strong>
-            <p style={{ fontSize: '1.1rem' }}>
-              User data is retained as long as necessary for operational, legal, or regulatory purposes.
+            <strong>Data Retention</strong>
+            <p>
+              We retain user data only as long as necessary for exam services, legal compliance, and account records.
             </p>
           </li>
+
           <li>
-            <strong style={{ color: '#2c3e50', fontSize: '1.5rem' }}>Changes to the Privacy Policy</strong>
-            <p style={{ fontSize: '1.1rem' }}>
-              We may update this policy periodically. Users will be notified of significant changes.
+            <strong>Children’s Privacy</strong>
+            <p>
+              This app is not intended for children under the age of 13. We do not knowingly collect personal data from children.
+            </p>
+          </li>
+
+          <li>
+            <strong>Changes to This Privacy Policy</strong>
+            <p>
+              We may update this Privacy Policy from time to time. Users are encouraged to review it periodically.
+            </p>
+          </li>
+
+          <li>
+            <strong>Contact Us</strong>
+            <p>
+              Email: jubedakbar@gmail.com <br />
+              Developer: KARNATAKA AYAN WHOLESALE SUPPLY ENTERPRICES <br />
+              App: ARN Student Portal
             </p>
           </li>
         </ol>
